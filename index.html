@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luminograph</title>
+<meta name="description" content="ID Sign-Wave generator for Project Duality — Returnite and the I/A/E system.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0f14;
+    --panel: #11171f;
+    --line: #232c38;
+    --text: #e3e9f0;
+    --muted: #8593a3;
+    --low: #4aa3ff;
+    --high: #b48cff;
+    --wave: #7ee8fa;
+    --ok: #3fb950;
+    --peak: #f0883e;
+    --res: #f778ba;
+    --bad: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 "IBM Plex Sans", system-ui, sans-serif;
+  }
+  header { padding: 18px 16px 10px; border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: .04em; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+  main { display: grid; grid-template-columns: 340px 1fr; gap: 0; min-height: calc(100vh - 64px); }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  aside { border-right: 1px solid var(--line); padding: 14px 16px; overflow-y: auto; max-height: calc(100vh - 64px); }
+  @media (max-width: 860px) { aside { max-height: none; border-right: 0; border-bottom: 1px solid var(--line); } }
+  section.out { padding: 14px 16px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 14px 0 8px; font-weight: 500; }
+  h2:first-child { margin-top: 0; }
+  .field { display: grid; grid-template-columns: 1fr 128px; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .field label { color: var(--muted); font-size: 13px; }
+  input[type=number], select {
+    width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line);
+    border-radius: 4px; padding: 4px 6px; font: 13px "IBM Plex Mono", monospace;
+  }
+  .cat { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; background: var(--panel); }
+  .cat.peak { border-color: var(--peak); }
+  .cat-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; letter-spacing: .06em; margin-bottom: 4px; }
+  .cat-head .v { font-family: "IBM Plex Mono", monospace; font-weight: 400; color: var(--muted); }
+  .cat.peak .cat-head .v { color: var(--peak); }
+  .des { display: grid; grid-template-columns: 112px 1fr 30px; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+  .des span:last-child { font-family: "IBM Plex Mono", monospace; text-align: right; color: var(--text); }
+  input[type=range] { width: 100%; accent-color: var(--wave); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+  .card h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .card h3 small { color: var(--muted); font-weight: 400; }
+  canvas { width: 100%; display: block; }
+  #spec { height: 260px; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 1100px) { .row { grid-template-columns: 1fr; } }
+  #chart { aspect-ratio: 1 / 1; max-width: 460px; margin: 0 auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 4px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:first-child { color: var(--muted); width: 46%; }
+  td:last-child { font-family: "IBM Plex Mono", monospace; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; font-family: "IBM Plex Sans", sans-serif; }
+  .b-ok { background: rgba(63,185,80,.15); color: var(--ok); }
+  .b-bad { background: rgba(248,81,73,.15); color: var(--bad); }
+  .b-mute { background: rgba(133,147,163,.15); color: var(--muted); }
+  ul.notes { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  button {
+    background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 4px;
+    padding: 5px 10px; font: 12px "IBM Plex Sans", sans-serif; cursor: pointer;
+  }
+  button:hover { border-color: var(--wave); }
+  .check { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+  #loading { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; color: var(--muted); z-index: 10; text-align: center; padding: 16px; }
+</style>
+</head>
+<body>
+<div id="loading">Loading the Python engine…<br><small>(first load can take a few seconds)</small></div>
+<header>
+  <h1>LUMINOGRAPH</h1>
+  <p>ID Sign-Wave generator · Returnite / I/A/E system · Project Duality</p>
+</header>
+<main>
+  <aside>
+    <h2>Subject</h2>
+    <div class="field"><label for="id">ID number (seed)</label><input id="id" type="number" step="1"></div>
+    <div class="field"><label for="origin">Origin</label>
+      <select id="origin"><option>Proto-Human</option><option>Neo-Human</option></select></div>
+    <div class="field"><label for="mass">Mass (kg)</label><input id="mass" type="number" min="1" step="0.1"></div>
+    <div class="field"><label for="units">Returnite held (units)</label><input id="units" type="number" min="0" step="1"></div>
+    <div class="field"><label for="max">Max capacity (units)</label><input id="max" type="number" min="1" step="1"></div>
+    <div class="field"><label for="control">Control (1–100)</label><input id="control" type="number" min="1" max="100" step="1"></div>
+    <label class="check"><input type="checkbox" id="drift" checked> Animate pre-awakening drift</label>
+    <div class="btns">
+      <button id="randId">New ID</button>
+      <button id="saveJson">Save subject JSON</button>
+      <button id="savePng">Save Sign-Wave PNG</button>
+    </div>
+    <h2>Desires</h2>
+    <div id="cats"></div>
+  </aside>
+  <section class="out">
+    <div class="card">
+      <h3>ID Sign-Wave <small id="specNote"></small></h3>
+      <canvas id="spec"></canvas>
+    </div>
+    <div class="row">
+      <div class="card">
+        <h3>I/A/E chart <small>vector sum of the 8 categories</small></h3>
+        <canvas id="chart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Reading</h3>
+        <table id="readout"></table>
+        <ul class="notes" id="notes"></ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+let L, META, result, driftT = 0, lastTick = 0;
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+async function boot() {
+  const py = await loadPyodide();
+  const src = await (await fetch("luminograph.py", { cache: "no-store" })).text();
+  py.FS.writeFile("luminograph.py", src);
+  L = py.pyimport("luminograph");
+  META = JSON.parse(py.runPython(
+    "import json, luminograph as L\n" +
+    "json.dumps({'desires': L.DESIRES, 'categories': L.CATEGORIES, 'example': L.EXAMPLE_SUBJECT, 'peak': L.PEAK_THRESHOLD})"));
+  buildForm(META.example);
+  $("loading").remove();
+  update();
+  requestAnimationFrame(tick);
+}
+
+function buildForm(ex) {
+  $("id").value = ex.id; $("origin").value = ex.origin; $("mass").value = ex.mass_kg;
+  $("units").value = ex.returnite_units; $("max").value = ex.max_capacity_units; $("control").value = ex.control;
+  const wrap = $("cats");
+  META.categories.forEach(c => {
+    const box = document.createElement("div");
+    box.className = "cat"; box.id = "cat-" + c.name;
+    box.innerHTML = `<div class="cat-head"><span>${c.name.toUpperCase()}</span><span class="v"></span></div>`;
+    c.desires.forEach(d => {
+      const row = document.createElement("div");
+      row.className = "des";
+      const key = d.replace(/\s/g, "_");
+      row.innerHTML = `<label for="d-${key}">${d}</label><input type="range" min="1" max="100" id="d-${key}" value="${ex.desires[d]}"><span id="v-${key}">${ex.desires[d]}</span>`;
+      box.appendChild(row);
+    });
+    wrap.appendChild(box);
+  });
+  document.querySelectorAll("aside input, aside select").forEach(el => el.addEventListener("input", update));
+  $("randId").onclick = () => { $("id").value = Math.floor(Math.random() * 1e6); update(); };
+  $("saveJson").onclick = () => download("subject.json", "application/json", JSON.stringify(subject(), null, 2));
+  $("savePng").onclick = () => { const a = document.createElement("a"); a.href = $("spec").toDataURL("image/png"); a.download = "signwave.png"; a.click(); };
+  window.addEventListener("resize", draw);
+}
+
+function subject() {
+  const desires = {};
+  META.desires.forEach(d => {
+    const key = d.replace(/\s/g, "_");
+    desires[d] = +$("d-" + key).value;
+    $("v-" + key).textContent = desires[d];
+  });
+  return {
+    id: +$("id").value || 0, origin: $("origin").value, mass_kg: +$("mass").value || 1,
+    returnite_units: +$("units").value || 0, max_capacity_units: +$("max").value || 1,
+    control: +$("control").value || 1, drift_t: driftT, desires
+  };
+}
+
+function update() {
+  result = JSON.parse(L.analyse_json(JSON.stringify(subject())));
+  result.categories.forEach(c => {
+    const box = $("cat-" + c.name);
+    box.classList.toggle("peak", c.peak);
+    box.querySelector(".v").textContent = c.value.toFixed(1) + (c.peak ? " · PEAK" : "");
+  });
+  draw(); readout();
+}
+
+function tick(ts) {
+  if ($("drift").checked && result && result.past_threshold && !result.awakened && ts - lastTick > 90) {
+    driftT += 0.12; lastTick = ts; update();
+  }
+  requestAnimationFrame(tick);
+}
+
+function setup(cv) {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = r.width * dpr; cv.height = r.height * dpr;
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return [g, r.width, r.height];
+}
+
+function draw() { if (result) { drawSpec(); drawChart(); } }
+
+function drawSpec() {
+  const [g, W, H] = setup($("spec"));
+  const sp = result.spectrum, pad = { l: 36, r: 10, t: 22, b: 26 };
+  const x = f => pad.l + (f / 100) * (W - pad.l - pad.r);
+  const y = v => H - pad.b - (v / 1.2) * (H - pad.t - pad.b);
+  g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H);
+  [["low", "--low", "LOW BAND · field device"], ["high", "--high", "HIGH BAND · lab (ID)"]].forEach(([k, c, t]) => {
+    const [a, b] = sp.bands[k];
+    g.fillStyle = css(c) + "14"; g.fillRect(x(a), pad.t, x(b) - x(a), H - pad.t - pad.b);
+    g.fillStyle = css(c); g.font = "11px \'IBM Plex Sans\', sans-serif"; g.fillText(t, x(a) + 6, pad.t - 7);
+  });
+  g.strokeStyle = css("--line"); g.fillStyle = css("--muted"); g.font = "10px \'IBM Plex Mono\', monospace";
+  for (let f = 0; f <= 100; f += 10) {
+    g.beginPath(); g.moveTo(x(f), H - pad.b); g.lineTo(x(f), H - pad.b + 4); g.stroke();
+    g.fillText(f, x(f) - 6, H - 8);
+  }
+  g.fillText("rf", 6, H - 8);
+  if (!result.past_threshold) {
+    g.fillStyle = css("--bad"); g.font = "13px \'IBM Plex Sans\', sans-serif"; g.textAlign = "center";
+    g.fillText("Below Luminans threshold — no ID Sign-Wave", W / 2, H / 2); g.textAlign = "left";
+    $("specNote").textContent = "no signature"; return;
+  }
+  $("specNote").textContent = result.awakened ? "permanent" : "shifting (pre-awakening)";
+  g.beginPath(); g.moveTo(x(0), y(0));
+  sp.rf.forEach((f, i) => g.lineTo(x(f), y(sp.intensity[i])));
+  g.lineTo(x(100), y(0)); g.closePath();
+  g.fillStyle = css("--wave") + "26"; g.fill();
+  g.beginPath(); sp.rf.forEach((f, i) => i ? g.lineTo(x(f), y(sp.intensity[i])) : g.moveTo(x(f), y(sp.intensity[i])));
+  g.strokeStyle = css("--wave"); g.lineWidth = 1.2; g.stroke();
+  sp.lines.filter(l => l.kind === "category").forEach(l => {
+    g.fillStyle = l.peak ? css("--peak") : css("--muted"); g.font = "9px \'IBM Plex Mono\', monospace";
+    g.fillText(l.label.slice(0, 2), x(l.rf) - 5, y(l.amp) - 5);
+  });
+}
+
+function drawChart() {
+  const cv = $("chart"); const [g, W, H] = setup(cv);
+  const R = result.resultant, lim = Math.max(100, R.magnitude * 1.1), s = (Math.min(W, H) / 2 - 18) / lim;
+  const cx = W / 2, cy = H / 2, X = v => cx + v * s, Y = v => cy - v * s;
+  g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H);
+  g.strokeStyle = css("--line"); g.lineWidth = 1;
+  [25, 50, 75, 100].forEach(r => { g.beginPath(); g.arc(cx, cy, r * s, 0, Math.PI * 2); g.stroke(); });
+  g.beginPath(); g.moveTo(X(-lim), cy); g.lineTo(X(lim), cy); g.moveTo(cx, Y(lim)); g.lineTo(cx, Y(-lim)); g.stroke();
+  g.font = "13px \'IBM Plex Sans\', sans-serif"; g.fillStyle = "#3a4656"; g.textAlign = "center";
+  const q = lim * 0.62;
+  [[-q, q, "Materiatic"], [q, q, "Allurate"], [-q, -q, "Exultate"], [q, -q, "Karmatic"]].forEach(([a, b, t]) => g.fillText(t, X(a), Y(b)));
+  g.font = "10px \'IBM Plex Sans\', sans-serif"; g.fillStyle = css("--muted");
+  g.fillText("AFFERENT", cx, Y(lim) + 12); g.fillText("EFFERENT", cx, Y(-lim) - 4);
+  g.textAlign = "left"; g.fillText("INSULAR", X(-lim) + 2, cy - 4);
+  g.textAlign = "right"; g.fillText("ALTERAL", X(lim) - 2, cy - 4);
+  g.textAlign = "center";
+  result.categories.forEach(c => {
+    const col = c.peak ? css("--peak") : css("--ok");
+    g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath(); g.moveTo(cx, cy); g.lineTo(X(c.x), Y(c.y)); g.stroke();
+    g.fillStyle = col; g.font = "10px \'IBM Plex Sans\', sans-serif";
+    const k = (c.value + 9) / c.value;
+    g.fillText(c.name, X(c.x * k), Y(c.y * k) + 3);
+  });
+  g.strokeStyle = css("--res"); g.fillStyle = css("--res"); g.lineWidth = 2.6;
+  g.beginPath(); g.moveTo(cx, cy); g.lineTo(X(R.x), Y(R.y)); g.stroke();
+  g.beginPath(); g.arc(X(R.x), Y(R.y), 4.5, 0, Math.PI * 2); g.fill();
+  g.textAlign = "left";
+}
+
+function readout() {
+  const r = result, s = r.subject, f = (v, d = 1) => Number(v).toFixed(d);
+  const outcome = r.outcome
+    ? `<span class="badge ${r.outcome === "Desir" ? "b-bad" : "b-ok"}">${r.outcome}</span>`
+    : `<span class="badge b-mute">—</span>`;
+  const rows = [
+    ["Volume", `${f(r.volume_l)} L`],
+    ["Luminans threshold", `${f(r.luminans_threshold_units)} units`],
+    ["Luminans ratio", `${f(r.luminans_ratio, 2)}×`],
+    ["Capacity", `${f(r.capacity_pct)} %`],
+    ["Stage", r.stage],
+    ["I/A/E position", r.quadrant_code === "-" ? "Centre" : `${r.quadrant} (${r.quadrant_code})`],
+    ["Magnitude / angle", `${f(r.resultant.magnitude)} / ${f(r.resultant.angle, 0)}°`],
+    ["Peaking categories", r.peaks.join(", ") || "none"],
+    ["Chaos", f(r.chaos, 2)],
+    ["Control required / held", `${f(r.required_control, 0)} / ${f(s.control, 0)}`],
+    ["Evocation", r.in_evocation ? "yes" : "no"],
+    ["Outcome", outcome],
+  ];
+  $("readout").innerHTML = rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join("");
+  $("notes").innerHTML = r.notes.map(n => `<li>${n}</li>`).join("");
+}
+
+function download(name, type, text) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
+}
+
+boot().catch(e => { $("loading").textContent = "Could not load: " + e; console.error(e); });
+</script>
+</body>
+</html>

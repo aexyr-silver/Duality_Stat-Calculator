@@ -1,0 +1,28 @@
+{
+  "id": 4172,
+  "name": "Example subject",
+  "origin": "Proto-Human",
+  "mass_kg": 70,
+  "returnite_units": 300,
+  "max_capacity_units": 1000,
+  "control": 60,
+  "drift_t": 0.0,
+  "desires": {
+    "Power": 35,
+    "Status": 30,
+    "Independence": 55,
+    "Honor": 60,
+    "Eating": 40,
+    "Physical Exercise": 45,
+    "Family": 70,
+    "Social Contact": 65,
+    "Tranquility": 50,
+    "Acceptance": 45,
+    "Romance": 85,
+    "Idealism": 90,
+    "Vengeance": 20,
+    "Order": 35,
+    "Curiosity": 75,
+    "Saving": 30
+  }
+}
