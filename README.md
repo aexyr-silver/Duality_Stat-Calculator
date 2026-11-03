@@ -33,7 +33,7 @@ Outputs:
 - **Subjects…** opens the subjects window: a table of every saved subject with its stage, I/A/E quadrant and status, plus **Open**, **Duplicate** (gets a new ID), **Export** and **Delete** for each. **New subject**, **Import JSON** (one subject or a list) and **Export all** are at the top. The list is kept in your browser between visits; use Export all to move it elsewhere.
 - **Left panel:** the open subject's stats, the **Animate** toggle, **Export PNG** (transparent ID Sign-Wave 2400×600 and ID Print 1600×1600, any colour), and the desires.
 - **Main area:** Reading, then the **ID Sign-Wave** (game UI), the **ID Print** and the **I/A/E radar chart**.
-- **Animation:** the ID Sign-Wave scrolls in a continuous loop, the ID Print rotates slowly, and pre-awakening drift glides smoothly. Exported PNGs always use the resting frame.
+- **Animation:** the ID Sign-Wave scrolls in a continuous loop; the ID Print stays still except for pre-awakening drift, which glides smoothly on both. Exported PNGs always use the resting frame.
 - **Developer view:** component stack (collapse it to make the page faster).
 
 ## Publish on GitHub Pages

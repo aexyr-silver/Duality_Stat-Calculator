@@ -132,7 +132,7 @@
     <div class="field"><label for="units">Returnite held (units)</label><input id="units" type="number" min="0" step="1"></div>
     <div class="field"><label for="max">Max capacity (units)</label><input id="max" type="number" min="1" step="1"></div>
     <div class="field"><label for="control">Control (1–100)</label><input id="control" type="number" min="1" max="100" step="1"></div>
-    <label class="check"><input type="checkbox" id="animate" checked> Animate (wave loop, print motion, pre-awakening drift)</label>
+    <label class="check"><input type="checkbox" id="animate" checked> Animate (wave loop, pre-awakening drift)</label>
     <h2>Export PNG <small style="text-transform:none;letter-spacing:0">· transparent, wave only</small></h2>
     <div class="btns" style="margin-top:0">
       <label class="check" style="margin:0">Colour <input type="color" id="expColour" value="#7ee8fa"></label>
@@ -342,7 +342,7 @@ async function importFile(e) {
 /* ---------- compute ---------- */
 // Python (luminograph.py) does all the analysis and produces the wave
 // components. The page only sums those sine waves to draw each frame.
-const SCROLL_SPEED = 0.06;   // sample periods per second (Sign-Wave scroll, Print rotation)
+const SCROLL_SPEED = 0.06;   // sample periods per second (Sign-Wave scroll)
 const DRIFT_STEP_MS = 200;   // how often pre-awakening drift is recomputed in Python
 const BLEND_MS = 200;        // components glide between drift steps over this time
 let compsFrom = null, compsTo = null, blendStart = 0, offset = 0, lastFrame = 0;
@@ -442,7 +442,8 @@ function drawSign(comps) {
   renderSign(g, W, H, comps, offset, css("--wave"), false);
 }
 
-// ID Print: the Sign-Wave wrapped into a circle; `off` rotates it.
+// ID Print: the Sign-Wave wrapped into a circle. Drawn at rest (no rotation);
+// it only moves when pre-awakening drift changes the components.
 function renderPrint(g, W, H, comps, off, colour, transparent) {
   const n = 1440, m = waveScale(comps), cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 / 1.4;
   if (!transparent) {
@@ -463,7 +464,7 @@ function renderPrint(g, W, H, comps, off, colour, transparent) {
 function drawPrint(comps) {
   const [g, W, H] = setup($("wd"));
   if (!result.past_threshold || !comps || !comps.length) { g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H); noSignal(g, W, H); return; }
-  renderPrint(g, W, H, comps, offset, css("--wave"), false);
+  renderPrint(g, W, H, comps, 0, css("--wave"), false);
 }
 
 // Component stack (developer view).
