@@ -29,9 +29,10 @@ Outputs:
 
 ## Web page features
 
-- **Subjects list:** save, add, delete; kept in your browser between visits.
-- **Import JSON:** one subject or a list of subjects. **Export current** / **Export all** download JSON files you can import later or run with the Python script.
-- **A · Composite Sign-Wave** (game UI), **D · Radial print**, **I/A/E chart**, **Reading**.
+- **Header:** pick a saved subject, edit its name and ID, generate a **New ID**, and **Save** (an orange dot means unsaved changes).
+- **Subjects…** opens the subjects window: a table of every saved subject with its stage, I/A/E quadrant and status, plus **Open**, **Duplicate** (gets a new ID), **Export** and **Delete** for each. **New subject**, **Import JSON** (one subject or a list) and **Export all** are at the top. The list is kept in your browser between visits; use Export all to move it elsewhere.
+- **Left panel:** the open subject's stats and desires only.
+- **A · Composite Sign-Wave** (game UI), **D · Radial print**, **I/A/E radar chart**, **Reading**.
 - **Transparent PNG export** of A (2400×600) and D (1600×1600), in any colour.
 - **Developer view:** C · Component stack (collapse it to make the page faster).
 
@@ -78,8 +79,8 @@ The wave is a sum of sine waves (frequency in rf = cycles per sample period):
 - **Dominant** (low band): flow sets the frequency (afferent = slower, efferent = faster); scope sets the shape (insular = one wave, alteral = two close waves that beat against each other); height shows how far past the threshold.
 - **Categories** (low band): one wave per category; height = category value; starting phase = the category's I/A/E direction angle.
 - **Fine lines** (high band): 32 waves whose frequencies and phases come from the ID number. They are the same from the first emission to the permanent wave.
-- **Pre-awakening drift:** before awakening, each desire wanders up to ±10 around its entered value (`DRIFT_AMPLITUDE`). This moves the I/A/E position and the dominant and category waves. Peaks and the Evocation trigger always use the entered values. After awakening, nothing drifts.
-- **Instability**: rough high-frequency texture, stronger the less stable the subject.
+- **Pre-awakening drift:** before awakening, each desire wanders up to ±3 around its entered value (`DRIFT_AMPLITUDE`). This moves the I/A/E position and the dominant and category waves. Peaks and the Evocation trigger always use the entered values. After awakening, nothing drifts.
+- **Instability**: high-frequency texture. Its strength comes from **control** (control 100 = smooth, control 1 = slightly rough; `NOISE_STRENGTH`). **Desir** get extra roughness on top (`DESIR_ROUGHNESS`). The pattern is seeded by the ID number.
 
 The radial print (D) rounds each frequency to whole cycles so the loop closes.
 

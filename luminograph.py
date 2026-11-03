@@ -47,8 +47,8 @@ CONTROL_CHAOS_WEIGHT = 50
 CONTROL_PER_EXTRA_PEAK = 5
 
 # Pre-awakening drift: each desire wanders around its entered value by up to
-# this many points. Peaks and the Evocation trigger use the entered values.
-DRIFT_AMPLITUDE = 10
+# this many points (before being combined into the 8 categories). Peaks and the Evocation trigger use the entered values.
+DRIFT_AMPLITUDE = 3
 
 # If the resultant is shorter than this fraction of the total magnitude,
 # the subject reads as sitting at the centre of the chart.
@@ -276,11 +276,13 @@ def analyse(subject):
         else:
             outcome = "Desir"
         awakened = True
-        instability = _clamp(-margin / 50, 0, 1)
     else:
         outcome = None
         awakened = False
-        instability = _clamp(0.3 + 0.5 * chaos, 0, 1)
+
+    # Instability comes from control alone: control 100 = perfectly stable,
+    # control 1 = fully unstable. The noise pattern itself is seeded by the ID.
+    instability = (100 - s["control"]) / 99
 
     # Pre-awakening drift: the desires wander, moving the I/A/E position and
     # the low-band waves. Peaks and the Evocation trigger use entered values.
@@ -306,7 +308,7 @@ def analyse(subject):
 
 
     comps = components(s, cats, rx, ry, total, luminans_ratio,
-                       past_threshold, awakened, instability)
+                       past_threshold, awakened, instability, outcome)
 
     return {
         "subject": s,
@@ -350,11 +352,13 @@ def analyse(subject):
 #               the subject is unstable
 # ---------------------------------------------------------------------------
 
-NOISE_COUNT = 24
+NOISE_COUNT = 24          # instability texture: seeded by ID, strength from control
+NOISE_STRENGTH = 0.12     # roughness at control 1 (scales down to 0 at control 100)
+DESIR_ROUGHNESS = 0.2     # extra roughness added only for Desir
 NOISE_BAND = (100.0, 260.0)
 
 
-def components(s, cats, rx, ry, total, ratio, past_threshold, awakened, instability):
+def components(s, cats, rx, ry, total, ratio, past_threshold, awakened, instability, outcome=None):
     comps = []
     if not past_threshold:
         return comps
@@ -390,12 +394,13 @@ def components(s, cats, rx, ry, total, ratio, past_threshold, awakened, instabil
                       "phase": rng_phase.random() * math.tau})
 
     # Instability noise
-    if instability > 0:
+    strength = NOISE_STRENGTH * instability + (DESIR_ROUGHNESS if outcome == "Desir" else 0.0)
+    if strength > 0:
         rng_n = random.Random(s["id"] * 104729 + 2)
         for _ in range(NOISE_COUNT):
             comps.append({"kind": "noise", "label": "Instability",
                           "rf": NOISE_BAND[0] + (NOISE_BAND[1] - NOISE_BAND[0]) * rng_n.random(),
-                          "amp": amp * 0.12 * instability * (0.5 + 0.5 * rng_n.random()),
+                          "amp": amp * strength * (0.5 + 0.5 * rng_n.random()),
                           "phase": rng_n.random() * math.tau})
     return comps
 
@@ -459,6 +464,21 @@ def analyse_json(subject_json, with_stack=True):
         _, rows = stack(r)
         r["waves"]["stack"] = [dict(row, y=_r(row["y"])) for row in rows]
     return json.dumps(r)
+
+
+def summaries_json(subjects_json):
+    """Short status for each subject in a list (used by the Subjects window)."""
+    out = []
+    for subj in json.loads(subjects_json):
+        r = analyse(dict(subj, drift_t=0))
+        if not r["past_threshold"]:
+            status = "No signature"
+        else:
+            status = r["outcome"] or "Pre-awakening"
+        out.append({"stage": r["stage"], "quadrant": r["quadrant"],
+                    "code": r["quadrant_code"], "status": status,
+                    "capacity_pct": r["capacity_pct"]})
+    return json.dumps(out)
 
 
 # ---------------------------------------------------------------------------

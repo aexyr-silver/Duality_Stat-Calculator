@@ -23,9 +23,31 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "IBM Plex Sans", system-ui, sans-serif; }
-  header { padding: 18px 16px 10px; border-bottom: 1px solid var(--line); }
+  header { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 12px 24px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
   header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: .04em; }
   header p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+  .hbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .hbar select { width: 200px; }
+  .hbar #name { width: 180px; }
+  .hbar .idbox { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12px; }
+  .hbar .idbox input { width: 100px; }
+  @media (max-width: 600px) { .hbar { width: 100%; } .hbar select, .hbar #name { width: 100%; flex: 1 1 100%; } }
+  button.primary { border-color: var(--wave); color: var(--wave); }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--peak); margin-left: 6px; vertical-align: 1px; }
+  .dot[hidden] { display: none; }
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 0; width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); }
+  .dlg-head h2 { margin: 0; font-size: 14px; color: var(--text); text-transform: none; letter-spacing: 0; font-weight: 600; }
+  .dlg-body { padding: 12px 16px 16px; }
+  .listwrap { overflow-x: auto; margin-top: 10px; }
+  table.list { min-width: 640px; }
+  table.list th { text-align: left; font-weight: 500; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); }
+  table.list td { padding: 6px 8px 6px 0; width: auto; color: var(--text); font-family: "IBM Plex Sans", sans-serif; }
+  table.list td.mono { font-family: "IBM Plex Mono", monospace; }
+  table.list tr.cur td { background: rgba(126,232,250,.06); }
+  table.list td.acts { white-space: nowrap; text-align: right; }
+  table.list td.acts button { padding: 3px 8px; }
   main { display: grid; grid-template-columns: 350px 1fr; min-height: calc(100vh - 64px); }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
   aside { border-right: 1px solid var(--line); padding: 14px 16px; overflow-y: auto; max-height: calc(100vh - 64px); }
@@ -84,28 +106,22 @@
 <body>
 <div id="loading">Loading the Python engine…<br><small>(first load can take a few seconds)</small></div>
 <header>
-  <h1>LUMINOGRAPH</h1>
-  <p>ID Sign-Wave generator · Returnite / I/A/E system · Project Duality</p>
+  <div>
+    <h1>LUMINOGRAPH</h1>
+    <p>ID Sign-Wave generator · Returnite / I/A/E system · Project Duality</p>
+  </div>
+  <div class="hbar">
+    <select id="roster" aria-label="Saved subjects"></select>
+    <input id="name" type="text" placeholder="Name" aria-label="Name">
+    <label class="idbox">ID <input id="id" type="number" step="1" aria-label="ID number (seed)"></label>
+    <button id="randId" title="Generate a new random ID">New ID</button>
+    <button id="saveSub" class="primary" title="Save changes to this subject">Save<span id="dirty" class="dot" hidden></span></button>
+    <button id="manage">Subjects…</button>
+  </div>
 </header>
 <main>
   <aside>
-    <h2>Subjects</h2>
-    <div class="field"><label for="roster">Saved subjects</label><select id="roster"></select></div>
-    <div class="btns">
-      <button id="saveSub">Save to list</button>
-      <button id="newSub">New</button>
-      <button id="delSub">Delete</button>
-    </div>
-    <div class="btns">
-      <label class="filebtn">Import JSON<input type="file" id="importFile" accept=".json,application/json"></label>
-      <button id="exportOne">Export current</button>
-      <button id="exportAll">Export all</button>
-    </div>
-    <div class="msg" id="msg"></div>
-
-    <h2>Subject</h2>
-    <div class="field"><label for="name">Name</label><input id="name" type="text"></div>
-    <div class="field"><label for="id">ID number (seed)</label><input id="id" type="number" step="1"></div>
+    <h2>Subject stats</h2>
     <div class="field"><label for="origin">Origin</label>
       <select id="origin"><option>Proto-Human</option><option>Neo-Human</option></select></div>
     <div class="field"><label for="mass">Mass (kg)</label><input id="mass" type="number" min="1" step="0.1"></div>
@@ -113,7 +129,6 @@
     <div class="field"><label for="max">Max capacity (units)</label><input id="max" type="number" min="1" step="1"></div>
     <div class="field"><label for="control">Control (1–100)</label><input id="control" type="number" min="1" max="100" step="1"></div>
     <label class="check"><input type="checkbox" id="drift" checked> Animate pre-awakening drift</label>
-    <div class="btns"><button id="randId">New ID</button></div>
     <h2>Desires</h2>
     <div id="cats"></div>
   </aside>
@@ -156,6 +171,19 @@
   </section>
 </main>
 
+<dialog id="subjects">
+  <div class="dlg-head"><h2>Subjects</h2><button id="closeDlg">Close</button></div>
+  <div class="dlg-body">
+    <div class="btns" style="margin-top:0">
+      <button id="newSub">New subject</button>
+      <label class="filebtn">Import JSON<input type="file" id="importFile" accept=".json,application/json"></label>
+      <button id="exportAll">Export all</button>
+    </div>
+    <div class="msg" id="msg"></div>
+    <div class="listwrap"><table class="list" id="list"></table></div>
+  </div>
+</dialog>
+
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script>
 let L, META, result, driftT = 0, lastTick = 0, pending = false;
@@ -176,13 +204,15 @@ async function boot() {
   buildForm();
   try { roster = JSON.parse(localStorage.getItem(STORE) || "[]"); } catch (e) { roster = []; }
   if (!roster.length) roster = [structuredClone(META.example)];
-  refreshRoster(0);
+  cur = 0; refreshRoster();
   loadSubject(roster[0]);
   $("loading").remove();
   requestAnimationFrame(tick);
 }
 
 /* ---------- form ---------- */
+let cur = 0, dirty = false;
+
 function buildForm() {
   const wrap = $("cats");
   META.categories.forEach(c => {
@@ -197,19 +227,24 @@ function buildForm() {
     });
     wrap.appendChild(box);
   });
-  document.querySelectorAll("aside input:not([type=file]), aside select:not(#roster)").forEach(el => el.addEventListener("input", schedule));
+  const edits = [...document.querySelectorAll("aside input, aside select"), $("name"), $("id")]
+    .filter(el => el.id !== "drift");
+  edits.forEach(el => el.addEventListener("input", () => { setDirty(true); schedule(); }));
+  $("drift").addEventListener("input", schedule);
   $("dev").addEventListener("toggle", schedule);
-  $("randId").onclick = () => { $("id").value = Math.floor(Math.random() * 1e6); schedule(); };
-  $("roster").onchange = () => loadSubject(roster[+$("roster").value]);
+  $("randId").onclick = () => { $("id").value = Math.floor(Math.random() * 1e6); setDirty(true); schedule(); };
+  $("roster").onchange = () => { const i = +$("roster").value; if (!openSubject(i)) $("roster").value = cur; };
   $("saveSub").onclick = saveCurrent;
-  $("newSub").onclick = () => { const s = structuredClone(META.example); s.name = "New subject"; s.id = Math.floor(Math.random() * 1e6); roster.push(s); persist(); refreshRoster(roster.length - 1); loadSubject(s); say("New subject added."); };
-  $("delSub").onclick = deleteCurrent;
+  $("manage").onclick = () => { renderList(); $("subjects").showModal(); };
+  $("closeDlg").onclick = () => $("subjects").close();
+  $("newSub").onclick = newSubject;
   $("importFile").onchange = importFile;
-  $("exportOne").onclick = () => download(fileName(subject().name) + ".json", JSON.stringify(cleanSubject(subject()), null, 2));
   $("exportAll").onclick = () => download("subjects.json", JSON.stringify(roster.map(cleanSubject), null, 2));
+  $("list").onclick = listAction;
   $("pngA").onclick = () => exportPng("A");
   $("pngD").onclick = () => exportPng("D");
   window.addEventListener("resize", draw);
+  window.addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
 }
 
 function loadSubject(s) {
@@ -218,7 +253,7 @@ function loadSubject(s) {
   $("mass").value = s.mass_kg ?? ex.mass_kg; $("units").value = s.returnite_units ?? 0;
   $("max").value = s.max_capacity_units ?? ex.max_capacity_units; $("control").value = s.control ?? 50;
   META.desires.forEach(d => { $("d-" + keyOf(d)).value = (s.desires && s.desires[d]) ?? 50; });
-  driftT = 0; schedule();
+  driftT = 0; setDirty(false); schedule();
 }
 
 function subject() {
@@ -232,21 +267,64 @@ function subject() {
 }
 function cleanSubject(s) { const c = structuredClone(s); c.drift_t = 0; return c; }
 
-/* ---------- roster ---------- */
+/* ---------- subjects ---------- */
+function setDirty(v) { dirty = v; $("dirty").hidden = !v; }
 function persist() { try { localStorage.setItem(STORE, JSON.stringify(roster)); } catch (e) {} }
-function refreshRoster(sel) {
-  $("roster").innerHTML = roster.map((s, i) => `<option value="${i}">${escapeHtml(s.name || "Unnamed")} · #${s.id}</option>`).join("");
-  $("roster").value = sel;
+function refreshRoster() {
+  $("roster").innerHTML = roster.map((s, i) => `<option value="${i}" title="ID ${s.id}">${escapeHtml(s.name || "Unnamed")}</option>`).join("");
+  $("roster").value = cur;
+}
+function confirmLeave() { return !dirty || confirm("This subject has unsaved changes. Discard them?"); }
+function openSubject(i) {
+  if (i !== cur && !confirmLeave()) return false;
+  cur = i; refreshRoster(); loadSubject(roster[i]); if ($("subjects").open) renderList(); return true;
 }
 function saveCurrent() {
-  const s = cleanSubject(subject()), i = +$("roster").value;
-  if (roster[i] && roster[i].id === s.id) roster[i] = s; else { roster.push(s); }
-  const idx = roster.indexOf(s); persist(); refreshRoster(idx); say(`Saved “${s.name}”.`);
+  roster[cur] = cleanSubject(subject()); persist(); refreshRoster(); setDirty(false);
+  if ($("subjects").open) renderList();
 }
-function deleteCurrent() {
-  if (roster.length <= 1) { say("Keep at least one subject."); return; }
-  const i = +$("roster").value, n = roster[i].name; roster.splice(i, 1); persist();
-  refreshRoster(0); loadSubject(roster[0]); say(`Deleted “${n}”.`);
+function newSubject() {
+  if (!confirmLeave()) return;
+  const s = structuredClone(META.example); s.name = "New subject"; s.id = Math.floor(Math.random() * 1e6);
+  roster.push(s); persist(); cur = roster.length - 1; refreshRoster(); loadSubject(s); renderList(); say("New subject added.");
+}
+function renderList() {
+  const info = JSON.parse(L.summaries_json(JSON.stringify(roster)));
+  const badge = st => `<span class="badge ${st === "Desir" ? "b-bad" : (st === "Lumenborn" || st === "Stellaborn") ? "b-ok" : "b-mute"}">${st}</span>`;
+  $("list").innerHTML = `<tr><th>Name</th><th>ID</th><th>Origin</th><th>Stage</th><th>I/A/E</th><th>Status</th><th></th></tr>` +
+    roster.map((s, i) => {
+      const r = info[i];
+      return `<tr class="${i === cur ? "cur" : ""}">
+        <td>${escapeHtml(s.name || "Unnamed")}${i === cur ? ' <span style="color:var(--muted);font-size:11px">(open)</span>' : ""}</td>
+        <td class="mono">${s.id}</td><td>${escapeHtml(s.origin || "Proto-Human")}</td>
+        <td>${r.stage} <span style="color:var(--muted)" class="mono">${r.capacity_pct.toFixed(0)}%</span></td>
+        <td>${r.code === "-" ? "Centre" : `${r.quadrant} <span class="mono" style="color:var(--muted)">${r.code}</span>`}</td>
+        <td>${badge(r.status)}</td>
+        <td class="acts">
+          <button data-act="open" data-i="${i}">Open</button>
+          <button data-act="dup" data-i="${i}">Duplicate</button>
+          <button data-act="export" data-i="${i}">Export</button>
+          <button data-act="del" data-i="${i}">Delete</button>
+        </td></tr>`;
+    }).join("");
+}
+function listAction(e) {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const i = +b.dataset.i, s = roster[i];
+  if (b.dataset.act === "open") { if (openSubject(i)) $("subjects").close(); }
+  else if (b.dataset.act === "dup") {
+    const c = cleanSubject(s); c.name = (s.name || "Unnamed") + " (copy)"; c.id = Math.floor(Math.random() * 1e6);
+    roster.splice(i + 1, 0, c); if (cur > i) cur++; persist(); refreshRoster(); renderList(); say(`Duplicated “${s.name}” with a new ID.`);
+  }
+  else if (b.dataset.act === "export") download(fileName(s.name) + ".json", JSON.stringify(cleanSubject(s), null, 2));
+  else if (b.dataset.act === "del") {
+    if (roster.length <= 1) { say("Keep at least one subject."); return; }
+    if (!confirm(`Delete “${s.name}”? This can't be undone (export it first if you want a copy).`)) return;
+    roster.splice(i, 1); persist();
+    if (i === cur) { cur = 0; refreshRoster(); loadSubject(roster[0]); }
+    else { if (i < cur) cur--; refreshRoster(); }
+    renderList(); say(`Deleted “${s.name}”.`);
+  }
 }
 async function importFile(e) {
   const f = e.target.files[0]; if (!f) return;
@@ -254,9 +332,8 @@ async function importFile(e) {
     const data = JSON.parse(await f.text());
     const list = (Array.isArray(data) ? data : [data]).filter(s => s && typeof s === "object" && s.desires);
     if (!list.length) throw new Error("no subjects with a 'desires' field");
-    roster.push(...list); persist(); refreshRoster(roster.length - list.length);
-    loadSubject(roster[roster.length - list.length]);
-    say(`Imported ${list.length} subject${list.length > 1 ? "s" : ""}.`);
+    roster.push(...list.map(cleanSubject)); persist(); refreshRoster(); renderList();
+    say(`Imported ${list.length} subject${list.length > 1 ? "s" : ""}. Use Open to load one.`);
   } catch (err) { say("Import failed: " + err.message); }
   e.target.value = "";
 }

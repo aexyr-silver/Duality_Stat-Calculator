@@ -78,7 +78,8 @@ Status key: **[Decided]** = confirmed by Mysten · **[Proposed]** = suggested, n
 - After awakening, the wavelength stops shifting and becomes a **permanent ID** for that person or monster.
 - A unique ID number produces each subject's fine lines. The ID fine lines **never change**: they are the same from first emission to the final permanent wavelength.
 - **Before awakening, the desires drift.** This shifts the I/A/E position and the desire-driven parts of the wave. After awakening, the desires stop drifting and the whole wavelength is permanent.
-- **[Draft]** In the code, each desire drifts up to ±10 around its entered value; peaks and the Evocation trigger use the entered values.
+- **[Decided]** In the code, each desire drifts up to ±3 around its entered value (before being combined into the 8 categories); peaks and the Evocation trigger use the entered values.
+- **[Decided]** Wave instability comes from **control**, with the pattern seeded by the ID: low control = unstable (rough) wave, high control = stable (smooth) wave. The control-based roughness is kept subtle; **Desir** get extra roughness on top.
 
 ### Desire Categories (game stats) **[Decided]**
 
