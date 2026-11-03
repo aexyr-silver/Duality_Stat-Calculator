@@ -31,7 +31,7 @@
   .hbar #name { width: 180px; }
   .hbar .idbox { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12px; }
   .hbar .idbox input { width: 100px; }
-  @media (max-width: 600px) { .hbar { width: 100%; } .hbar select, .hbar #name { width: 100%; flex: 1 1 100%; } }
+  @media (max-width: 600px) { .hbar { width: 100%; } .hbar select, .hbar .namebox { width: 100%; flex: 1 1 100%; } .hbar .namebox input { flex: 1; } }
   button.primary { border-color: var(--wave); color: var(--wave); }
   .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--peak); margin-left: 6px; vertical-align: 1px; }
   .dot[hidden] { display: none; }
@@ -50,8 +50,8 @@
   table.list td.acts button { padding: 3px 8px; }
   main { display: grid; grid-template-columns: 350px 1fr; min-height: calc(100vh - 64px); }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
-  aside { border-right: 1px solid var(--line); padding: 14px 16px; overflow-y: auto; max-height: calc(100vh - 64px); }
-  @media (max-width: 860px) { aside { max-height: none; border-right: 0; border-bottom: 1px solid var(--line); } }
+  aside { border-right: 1px solid var(--line); padding: 14px 16px; }
+  @media (max-width: 860px) { aside { border-right: 0; border-bottom: 1px solid var(--line); } }
   section.out { padding: 14px 16px; display: grid; gap: 14px; align-content: start; min-width: 0; }
   h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 16px 0 8px; font-weight: 500; }
   h2:first-child { margin-top: 0; }
@@ -86,6 +86,10 @@
   .b-ok { background: rgba(63,185,80,.15); color: var(--ok); }
   .b-bad { background: rgba(248,81,73,.15); color: var(--bad); }
   .b-mute { background: rgba(133,147,163,.15); color: var(--muted); }
+  .kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 16px; }
+  .kv div { border-bottom: 1px solid var(--line); padding-bottom: 4px; min-width: 0; }
+  .kv > div > span { display: block; color: var(--muted); font-size: 11px; }
+  .kv b { font: 500 13px "IBM Plex Mono", monospace; }
   ul.notes { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
   .btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
   button, .filebtn {
@@ -112,7 +116,7 @@
   </div>
   <div class="hbar">
     <select id="roster" aria-label="Saved subjects"></select>
-    <input id="name" type="text" placeholder="Name" aria-label="Name">
+    <label class="idbox namebox">Subject Name <input id="name" type="text" placeholder="Name"></label>
     <label class="idbox">ID <input id="id" type="number" step="1" aria-label="ID number (seed)"></label>
     <button id="randId" title="Generate a new random ID">New ID</button>
     <button id="saveSub" class="primary" title="Save changes to this subject">Save<span id="dirty" class="dot" hidden></span></button>
@@ -128,19 +132,30 @@
     <div class="field"><label for="units">Returnite held (units)</label><input id="units" type="number" min="0" step="1"></div>
     <div class="field"><label for="max">Max capacity (units)</label><input id="max" type="number" min="1" step="1"></div>
     <div class="field"><label for="control">Control (1–100)</label><input id="control" type="number" min="1" max="100" step="1"></div>
-    <label class="check"><input type="checkbox" id="drift" checked> Animate pre-awakening drift</label>
+    <label class="check"><input type="checkbox" id="animate" checked> Animate (wave loop, print motion, pre-awakening drift)</label>
+    <h2>Export PNG <small style="text-transform:none;letter-spacing:0">· transparent, wave only</small></h2>
+    <div class="btns" style="margin-top:0">
+      <label class="check" style="margin:0">Colour <input type="color" id="expColour" value="#7ee8fa"></label>
+      <button id="pngA">ID Sign-Wave</button>
+      <button id="pngD">ID Print</button>
+    </div>
     <h2>Desires</h2>
     <div id="cats"></div>
   </aside>
 
   <section class="out">
     <div class="card">
-      <h3>A · Composite Sign-Wave <small id="aNote"></small></h3>
+      <h3>Reading</h3>
+      <div class="kv" id="readout"></div>
+      <ul class="notes" id="notes"></ul>
+    </div>
+    <div class="card">
+      <h3>ID Sign-Wave <small id="aNote"></small></h3>
       <canvas id="wa"></canvas>
     </div>
     <div class="row">
       <div class="card">
-        <h3>D · Radial print <small>one period wrapped into a circle</small></h3>
+        <h3>ID Print <small>the Sign-Wave wrapped into a circle</small></h3>
         <canvas id="wd"></canvas>
       </div>
       <div class="card">
@@ -148,23 +163,10 @@
         <canvas id="chart"></canvas>
       </div>
     </div>
-    <div class="card">
-      <h3>Transparent PNG export <small>wave only, no background</small></h3>
-      <div class="btns">
-        <label class="check" style="margin:0">Colour <input type="color" id="expColour" value="#7ee8fa"></label>
-        <button id="pngA">Save A (composite)</button>
-        <button id="pngD">Save D (radial)</button>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Reading</h3>
-      <table id="readout"></table>
-      <ul class="notes" id="notes"></ul>
-    </div>
     <details class="dev" id="dev" open>
       <summary>Developer view</summary>
       <div class="card">
-        <h3>C · Component stack <small>each part of the signal on its own row</small></h3>
+        <h3>Component stack <small>each part of the signal on its own row</small></h3>
         <canvas id="wc"></canvas>
       </div>
     </details>
@@ -207,7 +209,7 @@ async function boot() {
   cur = 0; refreshRoster();
   loadSubject(roster[0]);
   $("loading").remove();
-  requestAnimationFrame(tick);
+  requestAnimationFrame(frame);
 }
 
 /* ---------- form ---------- */
@@ -228,9 +230,8 @@ function buildForm() {
     wrap.appendChild(box);
   });
   const edits = [...document.querySelectorAll("aside input, aside select"), $("name"), $("id")]
-    .filter(el => el.id !== "drift");
+    .filter(el => el.id !== "animate");
   edits.forEach(el => el.addEventListener("input", () => { setDirty(true); schedule(); }));
-  $("drift").addEventListener("input", schedule);
   $("dev").addEventListener("toggle", schedule);
   $("randId").onclick = () => { $("id").value = Math.floor(Math.random() * 1e6); setDirty(true); schedule(); };
   $("roster").onchange = () => { const i = +$("roster").value; if (!openSubject(i)) $("roster").value = cur; };
@@ -339,23 +340,69 @@ async function importFile(e) {
 }
 
 /* ---------- compute ---------- */
+// Python (luminograph.py) does all the analysis and produces the wave
+// components. The page only sums those sine waves to draw each frame.
+const SCROLL_SPEED = 0.06;   // sample periods per second (Sign-Wave scroll, Print rotation)
+const DRIFT_STEP_MS = 200;   // how often pre-awakening drift is recomputed in Python
+const BLEND_MS = 200;        // components glide between drift steps over this time
+let compsFrom = null, compsTo = null, blendStart = 0, offset = 0, lastFrame = 0;
+
 function schedule() { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; update(); }); } }
 function update() {
-  result = JSON.parse(L.analyse_json(JSON.stringify(subject()), $("dev").open));
+  result = JSON.parse(L.analyse_json(JSON.stringify(subject()), $("dev").open, false));
   result.categories.forEach(c => {
     const box = $("cat-" + c.name);
     box.classList.toggle("peak", c.peak);
     box.querySelector(".v").textContent = c.value.toFixed(1) + (c.peak ? " · PEAK" : "");
   });
   $("pngA").disabled = $("pngD").disabled = !result.past_threshold;
+  setComps(result.components);
   draw(); readout();
 }
-function tick(ts) {
-  if ($("drift").checked && result && result.past_threshold && !result.awakened && ts - lastTick > 160) {
-    driftT += 0.18; lastTick = ts; update();
-  }
-  requestAnimationFrame(tick);
+function setComps(next) {
+  const now = performance.now(), curr = currentComps(now);
+  compsFrom = (curr && curr.length === next.length) ? curr : next;
+  compsTo = next; blendStart = now;
 }
+function currentComps(now) {
+  if (!compsTo) return null;
+  const k = Math.min(1, (now - blendStart) / BLEND_MS);
+  if (k >= 1 || compsFrom === compsTo) return compsTo;
+  const e = k * k * (3 - 2 * k);
+  return compsTo.map((c, i) => ({ ...c, rf: compsFrom[i].rf + (c.rf - compsFrom[i].rf) * e, amp: compsFrom[i].amp + (c.amp - compsFrom[i].amp) * e }));
+}
+function frame(now) {
+  const dt = lastFrame ? Math.min(100, now - lastFrame) : 0; lastFrame = now;
+  if (result) {
+    const anim = $("animate").checked;
+    if (anim) offset = (offset + dt / 1000 * SCROLL_SPEED) % 1000;
+    if (anim && result.past_threshold && !result.awakened && now - lastTick > DRIFT_STEP_MS) {
+      driftT += 0.2; lastTick = now; update();
+    }
+    const comps = currentComps(now);
+    drawSign(comps); drawPrint(comps);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- wave maths ---------- */
+const TAU = Math.PI * 2;
+// Straight sum of sines at time x.
+function waveAt(comps, x) {
+  let v = 0; for (const c of comps) v += c.amp * Math.sin(TAU * c.rf * x + c.phase); return v;
+}
+// Closed-loop version for the Print: each frequency is blended between its two
+// nearest whole numbers so the circle always closes and changes glide smoothly.
+function loopAt(comps, x) {
+  let v = 0;
+  for (const c of comps) {
+    const f0 = Math.floor(c.rf), w = c.rf - f0;
+    v += c.amp * ((1 - w) * Math.sin(TAU * f0 * x + c.phase) + w * Math.sin(TAU * (f0 + 1) * x + c.phase));
+  }
+  return v;
+}
+// Stable vertical scale (does not pulse as the wave moves).
+function waveScale(comps) { let s = 0; for (const c of comps) s += c.amp * c.amp; return Math.max(1e-9, 2.4 * Math.sqrt(s)); }
 
 /* ---------- drawing ---------- */
 function setup(cv) {
@@ -364,20 +411,20 @@ function setup(cv) {
   const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
   return [g, r.width, r.height];
 }
-function draw() { if (!result) return; drawA(); drawD(); drawChart(); if ($("dev").open) drawC(); }
+function draw() { if (!result) return; drawChart(); if ($("dev").open) drawC(); }
 
 function noSignal(g, W, H) {
   g.fillStyle = css("--bad"); g.font = "13px 'IBM Plex Sans', sans-serif"; g.textAlign = "center";
   g.fillText("Below Luminans threshold — no ID Sign-Wave", W / 2, H / 2); g.textAlign = "left";
 }
 
-// Composite wave. transparent=true draws the wave only.
-function renderA(g, W, H, colour, transparent) {
-  const ys = result.waves.composite, n = ys.length;
-  const m = Math.max(1e-9, ...ys.map(Math.abs)) * 1.08;
-  const pad = transparent ? { l: 0, r: 0, t: 0, b: 0 } : { l: 8, r: 8, t: 8, b: 8 };
-  const x = i => pad.l + i / (n - 1) * (W - pad.l - pad.r);
-  const y = v => pad.t + (1 - (v / m + 1) / 2) * (H - pad.t - pad.b);
+// ID Sign-Wave: one sample period, starting at `off`. transparent=true draws the wave only.
+function renderSign(g, W, H, comps, off, colour, transparent) {
+  const n = Math.min(3000, Math.max(400, Math.round(W))), m = waveScale(comps);
+  const pad = transparent ? 0 : 8;
+  const x = i => pad + i / (n - 1) * (W - 2 * pad);
+  const y = v => pad + (1 - (Math.max(-1, Math.min(1, v / m)) + 1) / 2) * (H - 2 * pad);
+  const ys = new Array(n); for (let i = 0; i < n; i++) ys[i] = waveAt(comps, off + i / (n - 1));
   if (!transparent) {
     g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H);
     g.strokeStyle = css("--line"); g.lineWidth = 1;
@@ -388,30 +435,35 @@ function renderA(g, W, H, colour, transparent) {
   g.beginPath(); ys.forEach((v, i) => i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v)));
   g.strokeStyle = colour; g.lineWidth = transparent ? Math.max(2, W / 1200) : 1.2; g.lineJoin = "round"; g.stroke();
 }
-function drawA() {
+function drawSign(comps) {
   const [g, W, H] = setup($("wa"));
-  if (!result.past_threshold) { g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H); noSignal(g, W, H); $("aNote").textContent = "no signature"; return; }
+  if (!result.past_threshold || !comps || !comps.length) { g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H); noSignal(g, W, H); $("aNote").textContent = "no signature"; return; }
   $("aNote").textContent = result.awakened ? "permanent · game UI" : "shifting (pre-awakening) · game UI";
-  renderA(g, W, H, css("--wave"), false);
+  renderSign(g, W, H, comps, offset, css("--wave"), false);
 }
 
-// Radial print.
-function renderD(g, W, H, colour, transparent) {
-  const vs = result.waves.radial, n = vs.length, m = Math.max(1e-9, ...vs.map(Math.abs));
-  const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 / 1.4;
-  const pt = i => { const v = vs[i % n], th = (i / n) * Math.PI * 2 - Math.PI / 2, r = R * (1 + 0.35 * v / m); return [cx + r * Math.cos(th), cy + r * Math.sin(th)]; };
+// ID Print: the Sign-Wave wrapped into a circle; `off` rotates it.
+function renderPrint(g, W, H, comps, off, colour, transparent) {
+  const n = 1440, m = waveScale(comps), cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 / 1.4;
   if (!transparent) {
     g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H);
-    g.strokeStyle = css("--line"); g.setLineDash([2, 4]); g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+    g.strokeStyle = css("--line"); g.setLineDash([2, 4]); g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.stroke(); g.setLineDash([]);
   }
-  g.beginPath(); for (let i = 0; i <= n; i++) { const [px, py] = pt(i); i ? g.lineTo(px, py) : g.moveTo(px, py); } g.closePath();
+  g.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const v = Math.max(-1.2, Math.min(1.2, loopAt(comps, i / n + off) / m));
+    const th = (i / n) * TAU - Math.PI / 2, r = R * (1 + 0.35 * v);
+    const px = cx + r * Math.cos(th), py = cy + r * Math.sin(th);
+    i ? g.lineTo(px, py) : g.moveTo(px, py);
+  }
+  g.closePath();
   if (!transparent) { g.fillStyle = colour + "14"; g.fill(); }
   g.strokeStyle = colour; g.lineWidth = transparent ? Math.max(2, W / 800) : 1.1; g.lineJoin = "round"; g.stroke();
 }
-function drawD() {
+function drawPrint(comps) {
   const [g, W, H] = setup($("wd"));
-  if (!result.past_threshold) { g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H); noSignal(g, W, H); return; }
-  renderD(g, W, H, css("--wave"), false);
+  if (!result.past_threshold || !comps || !comps.length) { g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H); noSignal(g, W, H); return; }
+  renderPrint(g, W, H, comps, offset, css("--wave"), false);
 }
 
 // Component stack (developer view).
@@ -492,15 +544,16 @@ function drawChart() {
 
 /* ---------- export ---------- */
 function exportPng(which) {
-  if (!result || !result.past_threshold) return;
+  if (!result || !result.past_threshold || !compsTo || !compsTo.length) return;
   const cv = document.createElement("canvas");
   const [W, H] = which === "A" ? [2400, 600] : [1600, 1600];
   cv.width = W; cv.height = H;
   const g = cv.getContext("2d"), colour = $("expColour").value;
-  if (which === "A") renderA(g, W, H, colour, true); else renderD(g, W, H, colour, true);
+  // Exports always use the resting frame (start of the period, no rotation).
+  if (which === "A") renderSign(g, W, H, compsTo, 0, colour, true); else renderPrint(g, W, H, compsTo, 0, colour, true);
   const s = subject(), a = document.createElement("a");
   a.href = cv.toDataURL("image/png");
-  a.download = `${fileName(s.name)}_${s.id}_${which === "A" ? "composite" : "radial"}.png`;
+  a.download = `${fileName(s.name)}_${s.id}_${which === "A" ? "id-signwave" : "id-print"}.png`;
   a.click();
 }
 
@@ -525,7 +578,7 @@ function readout() {
     ["Evocation", r.in_evocation ? "yes" : "no"],
     ["Outcome", outcome],
   ];
-  $("readout").innerHTML = rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join("");
+  $("readout").innerHTML = rows.map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join("");
   $("notes").innerHTML = r.notes.map(n => `<li>${escapeHtml(n)}</li>`).join("");
 }
 function download(name, text) {

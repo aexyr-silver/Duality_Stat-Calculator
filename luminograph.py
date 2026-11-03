@@ -7,7 +7,7 @@ control, ID number) and produces:
   * the 8 desire categories and their I/A/E vector sum
   * Evocation status and outcome (Lumenborn / Stellaborn / Desir)
   * the Identifying Signature Wavelength (ID Sign-Wave) as a sum of sine
-    waves: composite (A), radial print (D) and component stack (C)
+    waves: ID Sign-Wave, ID Print and component stack
 
 The core uses only the Python standard library, so the same file runs
 locally and in the browser (via Pyodide on GitHub Pages).
@@ -405,33 +405,40 @@ def components(s, cats, rx, ry, total, ratio, past_threshold, awakened, instabil
     return comps
 
 
-def _sum(comps, ts, kinds=None, integer_freq=False):
+def _sum(comps, ts, kinds=None, loop=False):
+    """Sum the sine components at each time in ts.
+    loop=True blends each frequency between its two nearest whole numbers,
+    so a full period closes cleanly (used for the ID Print)."""
     out = []
     use = [c for c in comps if kinds is None or c["kind"] in kinds]
     for t in ts:
         v = 0.0
         for c in use:
-            f = round(c["rf"]) if integer_freq else c["rf"]
-            v += c["amp"] * math.sin(math.tau * f * t + c["phase"])
+            if loop:
+                f0 = math.floor(c["rf"])
+                w = c["rf"] - f0
+                v += c["amp"] * ((1 - w) * math.sin(math.tau * f0 * t + c["phase"])
+                                 + w * math.sin(math.tau * (f0 + 1) * t + c["phase"]))
+            else:
+                v += c["amp"] * math.sin(math.tau * c["rf"] * t + c["phase"])
         out.append(v)
     return out
 
 
 def composite(result, n=2400, t1=1.0):
-    """A · Composite Sign-Wave: every component summed over one sample period."""
+    """ID Sign-Wave: every component summed over one sample period."""
     ts = [t1 * i / (n - 1) for i in range(n)]
     return ts, _sum(result["components"], ts)
 
 
 def radial(result, n=2400):
-    """D · Radial print: one period wrapped into a circle.
-    Frequencies are rounded to whole cycles so the loop closes cleanly."""
+    """ID Print: one period of the Sign-Wave wrapped into a circle."""
     ts = [i / n for i in range(n)]
-    return ts, _sum(result["components"], ts, integer_freq=True)
+    return ts, _sum(result["components"], ts, loop=True)
 
 
 def stack(result, n=1500, t1=0.5):
-    """C · Component stack: each part of the signal on its own row."""
+    """Component stack: each part of the signal on its own row (developer view)."""
     ts = [t1 * i / (n - 1) for i in range(n)]
     comps = result["components"]
     rows = []
@@ -454,12 +461,16 @@ def _r(vals):
     return [round(v, 4) for v in vals]
 
 
-def analyse_json(subject_json, with_stack=True):
-    """JSON in, JSON out (used by the web page). Includes the A, D and C waves."""
+def analyse_json(subject_json, with_stack=True, with_waves=True):
+    """JSON in, JSON out (used by the web page).
+    The page draws the Sign-Wave and Print itself from the components,
+    so it asks for with_waves=False."""
     r = analyse(json.loads(subject_json))
-    _, a = composite(r)
-    _, d = radial(r)
-    r["waves"] = {"composite": _r(a), "radial": _r(d)}
+    r["waves"] = {}
+    if with_waves:
+        _, a = composite(r)
+        _, d = radial(r)
+        r["waves"] = {"composite": _r(a), "radial": _r(d)}
     if with_stack:
         _, rows = stack(r)
         r["waves"]["stack"] = [dict(row, y=_r(row["y"])) for row in rows]
@@ -541,7 +552,7 @@ def plot_overview(r, out_path):
     ax_c = fig.add_subplot(gs[1, 1])
     ax_t = fig.add_subplot(gs[1, 2])
 
-    _style(ax_a, "A · Composite Sign-Wave")
+    _style(ax_a, "ID Sign-Wave")
     if r["components"]:
         ts, ys = composite(r)
         ax_a.plot(ts, ys, color=WAVE, lw=0.8)
@@ -553,7 +564,7 @@ def plot_overview(r, out_path):
     ax_a.set_xlabel("time (one sample period)", color=MUT)
     ax_a.set_ylabel("amplitude", color=MUT)
 
-    _style(ax_d, "D · Radial print")
+    _style(ax_d, "ID Print")
     ax_d.set_aspect("equal")
     ax_d.set_xticks([])
     ax_d.set_yticks([])
@@ -622,7 +633,7 @@ def plot_stack(r, out_path):
 
     ts, rows = stack(r)
     fig, ax = plt.subplots(figsize=(12, max(3, 0.65 * len(rows) + 1.5)), facecolor=BG)
-    _style(ax, "C · Component stack (developer view)")
+    _style(ax, "Component stack (developer view)")
     colours = {"dominant": WAVE, "fine": HIGHC, "noise": NOISEC}
     for i, row in enumerate(rows):
         off = -i * 1.1
@@ -644,7 +655,7 @@ def plot_stack(r, out_path):
 
 
 def export_transparent(r, composite_path, radial_path, colour=WAVE):
-    """Game-ready PNGs of A and D: wave only, transparent background."""
+    """Game-ready PNGs of the ID Sign-Wave and ID Print: wave only, transparent background."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -681,10 +692,10 @@ def main(argv=None):
     import os
     p = argparse.ArgumentParser(description="ID Sign-Wave generator")
     p.add_argument("subject", nargs="?", help="subject JSON file")
-    p.add_argument("--out", default="overview.png", help="overview image (A, D, I/A/E chart, reading)")
-    p.add_argument("--stack", default="stack.png", help="component stack image (C, developer view)")
+    p.add_argument("--out", default="overview.png", help="overview image (ID Sign-Wave, ID Print, I/A/E chart, reading)")
+    p.add_argument("--stack", default="stack.png", help="component stack image (developer view)")
     p.add_argument("--transparent", action="store_true",
-                   help="also save transparent PNGs of A and D next to --out")
+                   help="also save transparent PNGs of the ID Sign-Wave and ID Print next to --out")
     p.add_argument("--colour", default=WAVE, help="wave colour for transparent PNGs, e.g. #ffffff")
     p.add_argument("--json", action="store_true", help="print full result as JSON")
     p.add_argument("--example", action="store_true", help="print an example subject")
@@ -708,7 +719,7 @@ def main(argv=None):
         print(f"\nSaved {a.out} and {a.stack}")
         if a.transparent:
             base = os.path.splitext(a.out)[0]
-            cp, rp = base + "_composite.png", base + "_radial.png"
+            cp, rp = base + "_id-signwave.png", base + "_id-print.png"
             if export_transparent(r, cp, rp, a.colour):
                 print(f"Saved {cp} and {rp} (transparent)")
             else:

@@ -16,25 +16,25 @@ Generates a subject's **Identifying Signature Wavelength (ID Sign-Wave)** and I/
 pip install matplotlib            # only needed for images
 python luminograph.py                          # built-in example -> overview.png + stack.png
 python luminograph.py subject.json             # your subject
-python luminograph.py subject.json --transparent              # + transparent A and D PNGs
+python luminograph.py subject.json --transparent              # + transparent ID Sign-Wave and ID Print PNGs
 python luminograph.py subject.json --transparent --colour "#ffffff"
 python luminograph.py subject.json --json      # full result as JSON
 python luminograph.py --example > my_subject.json
 ```
 
 Outputs:
-- `overview.png`: A (composite), D (radial), I/A/E chart, reading
-- `stack.png`: C (component stack, developer view)
-- with `--transparent`: `overview_composite.png` and `overview_radial.png`, wave only on a transparent background
+- `overview.png`: ID Sign-Wave, ID Print, I/A/E chart, reading
+- `stack.png`: component stack (developer view)
+- with `--transparent`: `overview_id-signwave.png` and `overview_id-print.png`, wave only on a transparent background
 
 ## Web page features
 
 - **Header:** pick a saved subject, edit its name and ID, generate a **New ID**, and **Save** (an orange dot means unsaved changes).
 - **Subjects…** opens the subjects window: a table of every saved subject with its stage, I/A/E quadrant and status, plus **Open**, **Duplicate** (gets a new ID), **Export** and **Delete** for each. **New subject**, **Import JSON** (one subject or a list) and **Export all** are at the top. The list is kept in your browser between visits; use Export all to move it elsewhere.
-- **Left panel:** the open subject's stats and desires only.
-- **A · Composite Sign-Wave** (game UI), **D · Radial print**, **I/A/E radar chart**, **Reading**.
-- **Transparent PNG export** of A (2400×600) and D (1600×1600), in any colour.
-- **Developer view:** C · Component stack (collapse it to make the page faster).
+- **Left panel:** the open subject's stats, the **Animate** toggle, **Export PNG** (transparent ID Sign-Wave 2400×600 and ID Print 1600×1600, any colour), and the desires.
+- **Main area:** Reading, then the **ID Sign-Wave** (game UI), the **ID Print** and the **I/A/E radar chart**.
+- **Animation:** the ID Sign-Wave scrolls in a continuous loop, the ID Print rotates slowly, and pre-awakening drift glides smoothly. Exported PNGs always use the resting frame.
+- **Developer view:** component stack (collapse it to make the page faster).
 
 ## Publish on GitHub Pages
 
@@ -82,7 +82,7 @@ The wave is a sum of sine waves (frequency in rf = cycles per sample period):
 - **Pre-awakening drift:** before awakening, each desire wanders up to ±3 around its entered value (`DRIFT_AMPLITUDE`). This moves the I/A/E position and the dominant and category waves. Peaks and the Evocation trigger always use the entered values. After awakening, nothing drifts.
 - **Instability**: high-frequency texture. Its strength comes from **control** (control 100 = smooth, control 1 = slightly rough; `NOISE_STRENGTH`). **Desir** get extra roughness on top (`DESIR_ROUGHNESS`). The pattern is seeded by the ID number.
 
-The radial print (D) rounds each frequency to whole cycles so the loop closes.
+The ID Print blends each frequency between its two nearest whole numbers so the circle closes cleanly and changes glide smoothly.
 
 ## Placeholders to revisit
 
