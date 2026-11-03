@@ -6,7 +6,8 @@ control, ID number) and produces:
   * Luminans threshold, capacity %, stage
   * the 8 desire categories and their I/A/E vector sum
   * Evocation status and outcome (Lumenborn / Stellaborn / Desir)
-  * the Identifying Signature Wavelength (ID Sign-Wave) as a spectrum
+  * the Identifying Signature Wavelength (ID Sign-Wave) as a sum of sine
+    waves: composite (A), radial print (D) and component stack (C)
 
 The core uses only the Python standard library, so the same file runs
 locally and in the browser (via Pyodide on GitHub Pages).
@@ -14,7 +15,8 @@ Plotting (matplotlib) is only used when run from the command line.
 
 Usage:
     python luminograph.py --example > subject.json
-    python luminograph.py subject.json --out signwave.png
+    python luminograph.py subject.json                  # overview.png + stack.png
+    python luminograph.py subject.json --transparent    # + transparent A and D PNGs
     python luminograph.py subject.json --json
 """
 
@@ -86,11 +88,9 @@ QUADRANTS = {
 }
 
 # ---------------------------------------------------------------------------
-# ID Sign-Wave layout (relative frequency units, "rf")
+# ID Sign-Wave layout (relative frequency units, "rf" = cycles per sample period)
 # ---------------------------------------------------------------------------
 
-RF_MIN, RF_MAX = 0.0, 100.0
-RF_POINTS = 1000
 LOW_BAND = (0.0, 30.0)    # field device: dominant peak + category comb
 HIGH_BAND = (30.0, 100.0)  # lab equipment: fine lines (ID)
 DOMINANT_CENTRE = 8.0      # rf of the dominant peak at neutral flow
@@ -201,7 +201,7 @@ def quadrant_for(x, y, near_centre):
 
 
 def analyse(subject):
-    """Main entry point. Returns a dict with every derived value and the spectrum."""
+    """Main entry point. Returns a dict with every derived value and the wave components."""
     s = _clean_subject(subject)
     notes = []
 
@@ -272,8 +272,9 @@ def analyse(subject):
         notes.append("Desir assumed to keep a permanent ID Sign-Wave (unconfirmed).")
     notes.append("Control formula is a placeholder.")
 
-    spectrum = sign_wave(s, cats, rx, ry, total, luminans_ratio,
-                         past_threshold, awakened, instability)
+
+    comps = components(s, cats, rx, ry, total, luminans_ratio,
+                       past_threshold, awakened, instability)
 
     return {
         "subject": s,
@@ -297,52 +298,57 @@ def analyse(subject):
         "outcome": outcome,
         "awakened": awakened,
         "instability": instability,
-        "spectrum": spectrum,
+        "components": comps,
         "notes": notes,
     }
 
 
 # ---------------------------------------------------------------------------
-# ID Sign-Wave
+# ID Sign-Wave components
+#
+# The Sign-Wave is a sum of sine waves. Each component has a frequency (rf),
+# an amplitude and a starting phase:
+#   dominant  - low band; flow sets frequency, scope sets single/doublet
+#   category  - low band; one per category, amplitude = category value,
+#               phase = the category's I/A/E direction angle
+#   fine      - high band; positions and phases seeded by the ID number,
+#               drift before awakening, fixed after
+#   noise     - instability; rough high-frequency texture, stronger when
+#               the subject is unstable
 # ---------------------------------------------------------------------------
 
-def sign_wave(s, cats, rx, ry, total, ratio, past_threshold, awakened, instability):
-    step = (RF_MAX - RF_MIN) / (RF_POINTS - 1)
-    rf = [RF_MIN + i * step for i in range(RF_POINTS)]
-    intensity = [0.0] * RF_POINTS
-    lines = []
+NOISE_COUNT = 24
+NOISE_BAND = (100.0, 260.0)
 
+
+def components(s, cats, rx, ry, total, ratio, past_threshold, awakened, instability):
+    comps = []
     if not past_threshold:
-        return {"rf": rf, "intensity": intensity, "lines": lines,
-                "bands": {"low": LOW_BAND, "high": HIGH_BAND}}
+        return comps
 
-    # Amplitude from how far past threshold the subject is.
     amp = 0.4 + 0.6 * _clamp(math.log10(ratio), 0, 1)
-    widen = 1 + 3 * instability
 
-    # --- Low band: dominant peak (flow -> position, scope -> shape) ---
+    # Dominant (flow -> frequency, scope -> shape)
     nx = rx / total if total else 0.0   # + Alteral / - Insular
     ny = ry / total if total else 0.0   # + Afferent / - Efferent
     f0 = DOMINANT_CENTRE - DOMINANT_SPAN * _clamp(ny * 2, -1, 1)
-    w0 = 0.7 * widen
-    if nx > 0:  # Alteral: peak splits into a doublet
+    if nx > 0:  # Alteral: doublet
         split = 3.0 * _clamp(nx * 2, 0, 1)
-        peaks = [(f0 - split / 2, amp * 0.6), (f0 + split / 2, amp * 0.6)]
-    else:       # Insular: single peak, sharper the more insular
-        w0 *= 1 - 0.5 * _clamp(-nx * 2, 0, 1)
-        peaks = [(f0, amp)]
-    for c, a in peaks:
-        lines.append({"rf": c, "amp": a, "width": w0, "kind": "dominant"})
+        comps.append({"kind": "dominant", "label": "Dominant", "rf": f0 - split / 2, "amp": amp * 0.6, "phase": 0.0})
+        comps.append({"kind": "dominant", "label": "Dominant", "rf": f0 + split / 2, "amp": amp * 0.6, "phase": math.pi / 2})
+    else:       # Insular: single
+        comps.append({"kind": "dominant", "label": "Dominant", "rf": f0, "amp": amp, "phase": 0.0})
 
-    # --- Low band: category comb ---
+    # Categories
     for i, c in enumerate(cats):
-        a = amp * 0.5 * c["value"] / 100
-        lines.append({"rf": COMB_START + i * COMB_STEP, "amp": a,
-                      "width": 0.18 * widen, "kind": "category",
-                      "label": c["name"], "peak": c["peak"]})
+        comps.append({"kind": "category", "label": c["name"], "peak": c["peak"],
+                      "rf": COMB_START + i * COMB_STEP,
+                      "amp": amp * 0.5 * c["value"] / 100,
+                      "phase": math.radians(c["angle"])})
 
-    # --- High band: fine lines seeded by the ID number ---
+    # Fine lines (ID)
     rng = random.Random(s["id"])
+    rng_phase = random.Random(s["id"] * 7919 + 1)
     t = 0.0 if awakened else s["drift_t"]
     for i in range(FINE_LINE_COUNT):
         pos = HIGH_BAND[0] + 2 + (HIGH_BAND[1] - HIGH_BAND[0] - 4) * rng.random()
@@ -354,24 +360,80 @@ def sign_wave(s, cats, rx, ry, total, ratio, past_threshold, awakened, instabili
         if t:
             pos += 0.8 * math.sin(t * 0.9 + ph1)
             a *= 1 + 0.15 * math.sin(t * 1.3 + ph2)
-        lines.append({"rf": pos, "amp": amp * 0.6 * a,
-                      "width": 0.12 * widen, "kind": "fine"})
+        comps.append({"kind": "fine", "label": "Fine lines (ID)",
+                      "rf": pos, "amp": amp * 0.6 * a,
+                      "phase": rng_phase.random() * math.tau})
 
-    for ln in lines:
-        lo = ln["rf"] - 5 * ln["width"]
-        hi = ln["rf"] + 5 * ln["width"]
-        i0 = max(0, int((lo - RF_MIN) / step))
-        i1 = min(RF_POINTS - 1, int((hi - RF_MIN) / step) + 1)
-        for i in range(i0, i1 + 1):
-            intensity[i] += _gauss(rf[i], ln["rf"], ln["width"], ln["amp"])
+    # Instability noise
+    if instability > 0:
+        rng_n = random.Random(s["id"] * 104729 + 2)
+        for _ in range(NOISE_COUNT):
+            comps.append({"kind": "noise", "label": "Instability",
+                          "rf": NOISE_BAND[0] + (NOISE_BAND[1] - NOISE_BAND[0]) * rng_n.random(),
+                          "amp": amp * 0.12 * instability * (0.5 + 0.5 * rng_n.random()),
+                          "phase": rng_n.random() * math.tau})
+    return comps
 
-    return {"rf": rf, "intensity": intensity, "lines": lines,
-            "bands": {"low": LOW_BAND, "high": HIGH_BAND}}
+
+def _sum(comps, ts, kinds=None, integer_freq=False):
+    out = []
+    use = [c for c in comps if kinds is None or c["kind"] in kinds]
+    for t in ts:
+        v = 0.0
+        for c in use:
+            f = round(c["rf"]) if integer_freq else c["rf"]
+            v += c["amp"] * math.sin(math.tau * f * t + c["phase"])
+        out.append(v)
+    return out
 
 
-def analyse_json(subject_json):
-    """JSON in, JSON out (used by the web page)."""
-    return json.dumps(analyse(json.loads(subject_json)))
+def composite(result, n=2400, t1=1.0):
+    """A · Composite Sign-Wave: every component summed over one sample period."""
+    ts = [t1 * i / (n - 1) for i in range(n)]
+    return ts, _sum(result["components"], ts)
+
+
+def radial(result, n=2400):
+    """D · Radial print: one period wrapped into a circle.
+    Frequencies are rounded to whole cycles so the loop closes cleanly."""
+    ts = [i / n for i in range(n)]
+    return ts, _sum(result["components"], ts, integer_freq=True)
+
+
+def stack(result, n=1500, t1=0.5):
+    """C · Component stack: each part of the signal on its own row."""
+    ts = [t1 * i / (n - 1) for i in range(n)]
+    comps = result["components"]
+    rows = []
+    dom = [c for c in comps if c["kind"] == "dominant"]
+    if dom:
+        rows.append({"label": "Dominant", "kind": "dominant", "peak": False, "y": _sum(dom, ts)})
+    for c in comps:
+        if c["kind"] == "category":
+            rows.append({"label": c["label"], "kind": "category", "peak": c["peak"], "y": _sum([c], ts)})
+    fine = [c for c in comps if c["kind"] == "fine"]
+    if fine:
+        rows.append({"label": "Fine lines (ID)", "kind": "fine", "peak": False, "y": _sum(fine, ts)})
+    noise = [c for c in comps if c["kind"] == "noise"]
+    if noise:
+        rows.append({"label": "Instability", "kind": "noise", "peak": False, "y": _sum(noise, ts)})
+    return ts, rows
+
+
+def _r(vals):
+    return [round(v, 4) for v in vals]
+
+
+def analyse_json(subject_json, with_stack=True):
+    """JSON in, JSON out (used by the web page). Includes the A, D and C waves."""
+    r = analyse(json.loads(subject_json))
+    _, a = composite(r)
+    _, d = radial(r)
+    r["waves"] = {"composite": _r(a), "radial": _r(d)}
+    if with_stack:
+        _, rows = stack(r)
+        r["waves"]["stack"] = [dict(row, y=_r(row["y"])) for row in rows]
+    return json.dumps(r)
 
 
 # ---------------------------------------------------------------------------
@@ -398,76 +460,164 @@ def summary_text(r):
     return "\n".join(lines + ["", *r["notes"]])
 
 
-def plot(r, out_path):
+BG, PANEL, GRID, TXT, MUT = "#0b0f14", "#11171f", "#232c38", "#e3e9f0", "#8593a3"
+WAVE, HIGHC, PEAKC, OKC, NOISEC, RESC = "#7ee8fa", "#b48cff", "#f0883e", "#3fb950", "#f85149", "#f778ba"
+
+
+def _style(ax, title=None):
+    ax.set_facecolor(PANEL)
+    for sp in ax.spines.values():
+        sp.set_color(GRID)
+    ax.tick_params(colors=MUT)
+    if title:
+        ax.set_title(title, color=TXT, loc="left")
+
+
+def _radial_xy(vals, inner=1.0, depth=0.35):
+    m = max(1e-9, max(abs(v) for v in vals))
+    xs, ys = [], []
+    for i, v in enumerate(vals + vals[:1]):
+        th = math.tau * i / len(vals)
+        rr = inner + depth * v / m
+        xs.append(rr * math.cos(th))
+        ys.append(rr * math.sin(th))
+    return xs, ys
+
+
+def plot_overview(r, out_path):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig = plt.figure(figsize=(13, 7.5), facecolor="#0d1117")
-    gs = fig.add_gridspec(2, 2, width_ratios=[1.6, 1], height_ratios=[1, 1])
-    ax_sp = fig.add_subplot(gs[0, :])
-    ax_ch = fig.add_subplot(gs[1, 0])
-    ax_tx = fig.add_subplot(gs[1, 1])
-    for ax in (ax_sp, ax_ch, ax_tx):
-        ax.set_facecolor("#0d1117")
-        for sp in ax.spines.values():
-            sp.set_color("#30363d")
-        ax.tick_params(colors="#8b949e")
+    fig = plt.figure(figsize=(14, 9), facecolor=BG)
+    gs = fig.add_gridspec(2, 3, height_ratios=[0.8, 1.2])
+    ax_a = fig.add_subplot(gs[0, :])
+    ax_d = fig.add_subplot(gs[1, 0])
+    ax_c = fig.add_subplot(gs[1, 1])
+    ax_t = fig.add_subplot(gs[1, 2])
 
-    sp = r["spectrum"]
-    ax_sp.axvspan(*sp["bands"]["low"], color="#1f6feb", alpha=0.08)
-    ax_sp.axvspan(*sp["bands"]["high"], color="#a371f7", alpha=0.08)
-    ax_sp.plot(sp["rf"], sp["intensity"], color="#7ee8fa", lw=1)
-    ax_sp.fill_between(sp["rf"], sp["intensity"], color="#7ee8fa", alpha=0.15)
-    ax_sp.set_title("ID Sign-Wave", color="#e6edf3", loc="left")
-    ax_sp.set_xlabel("relative frequency (rf)", color="#8b949e")
-    ax_sp.set_xlim(0, 100)
-    ax_sp.set_ylim(0, 1.2)
-    ax_sp.text(1, 1.12, "LOW BAND · field device", color="#58a6ff", fontsize=8)
-    ax_sp.text(31, 1.12, "HIGH BAND · lab (ID)", color="#d2a8ff", fontsize=8)
-    if not r["past_threshold"]:
-        ax_sp.text(50, 0.6, "Below Luminans threshold — no signature",
-                   color="#f85149", ha="center")
+    _style(ax_a, "A · Composite Sign-Wave")
+    if r["components"]:
+        ts, ys = composite(r)
+        ax_a.plot(ts, ys, color=WAVE, lw=0.8)
+        ax_a.fill_between(ts, ys, color=WAVE, alpha=0.08)
+    else:
+        ax_a.text(0.5, 0, "Below Luminans threshold — no ID Sign-Wave", color=NOISEC, ha="center")
+    ax_a.axhline(0, color=MUT, lw=0.6)
+    ax_a.set_xlim(0, 1)
+    ax_a.set_xlabel("time (one sample period)", color=MUT)
+    ax_a.set_ylabel("amplitude", color=MUT)
 
+    _style(ax_d, "D · Radial print")
+    ax_d.set_aspect("equal")
+    ax_d.set_xticks([])
+    ax_d.set_yticks([])
+    if r["components"]:
+        _, vals = radial(r)
+        xs, ys = _radial_xy(vals)
+        ax_d.plot(xs, ys, color=WAVE, lw=0.8)
+        ax_d.fill(xs, ys, color=WAVE, alpha=0.08)
+    ax_d.set_xlim(-1.45, 1.45)
+    ax_d.set_ylim(-1.45, 1.45)
+
+    _style(ax_c, "I/A/E chart")
     lim = max(100, r["resultant"]["magnitude"] * 1.1)
-    ax_ch.set_xlim(-lim, lim)
-    ax_ch.set_ylim(-lim, lim)
-    ax_ch.set_aspect("equal")
-    ax_ch.axhline(0, color="#30363d")
-    ax_ch.axvline(0, color="#30363d")
+    ax_c.set_xlim(-lim, lim)
+    ax_c.set_ylim(-lim, lim)
+    ax_c.set_aspect("equal")
+    ax_c.axhline(0, color=GRID)
+    ax_c.axvline(0, color=GRID)
     q = lim * 0.6
     for (x, y, name) in [(-q, q, "Materiatic"), (q, q, "Allurate"),
                          (-q, -q, "Exultate"), (q, -q, "Karmatic")]:
-        ax_ch.text(x, y, name, color="#484f58", ha="center", va="center")
-    ax_ch.text(0, lim * 0.95, "Afferent", color="#8b949e", ha="center", va="top", fontsize=8)
-    ax_ch.text(0, -lim * 0.95, "Efferent", color="#8b949e", ha="center", va="bottom", fontsize=8)
-    ax_ch.text(-lim * 0.95, 0, "Insular", color="#8b949e", va="bottom", fontsize=8)
-    ax_ch.text(lim * 0.95, 0, "Alteral", color="#8b949e", ha="right", va="bottom", fontsize=8)
+        ax_c.text(x, y, name, color="#3a4656", ha="center", va="center")
     for c in r["categories"]:
-        col = "#f0883e" if c["peak"] else "#3fb950"
-        ax_ch.plot([0, c["x"]], [0, c["y"]], color=col, lw=1.5, alpha=0.8)
-        ax_ch.text(c["x"] * 1.08, c["y"] * 1.08, c["name"], color=col,
-                   fontsize=7, ha="center", va="center")
+        col = PEAKC if c["peak"] else OKC
+        ax_c.plot([0, c["x"]], [0, c["y"]], color=col, lw=1.5)
+        ax_c.text(c["x"] * 1.1, c["y"] * 1.1, c["name"], color=col, fontsize=7, ha="center", va="center")
     R = r["resultant"]
-    ax_ch.annotate("", xy=(R["x"], R["y"]), xytext=(0, 0),
-                   arrowprops=dict(arrowstyle="->", color="#f778ba", lw=2.5))
-    ax_ch.plot(R["x"], R["y"], "o", color="#f778ba")
-    ax_ch.set_title("I/A/E chart", color="#e6edf3", loc="left")
+    ax_c.annotate("", xy=(R["x"], R["y"]), xytext=(0, 0),
+                  arrowprops=dict(arrowstyle="->", color=RESC, lw=2.5))
 
-    ax_tx.axis("off")
-    ax_tx.text(0, 1, summary_text(r), color="#e6edf3", va="top",
-               family="monospace", fontsize=8.5, wrap=True)
+    ax_t.axis("off")
+    ax_t.text(0, 1, summary_text(r), color=TXT, va="top", family="monospace", fontsize=8)
 
     fig.tight_layout()
-    fig.savefig(out_path, dpi=130, facecolor=fig.get_facecolor())
+    fig.savefig(out_path, dpi=130, facecolor=BG)
     plt.close(fig)
+
+
+def plot_stack(r, out_path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    ts, rows = stack(r)
+    fig, ax = plt.subplots(figsize=(12, max(3, 0.65 * len(rows) + 1.5)), facecolor=BG)
+    _style(ax, "C · Component stack (developer view)")
+    colours = {"dominant": WAVE, "fine": HIGHC, "noise": NOISEC}
+    for i, row in enumerate(rows):
+        off = -i * 1.1
+        ys = row["y"]
+        scale = 1.0
+        if row["kind"] in ("fine", "noise"):
+            scale = 0.45 / max(1e-9, max(abs(v) for v in ys))
+        col = PEAKC if row["peak"] else colours.get(row["kind"], OKC)
+        ax.plot(ts, [off + v * scale for v in ys], color=col, lw=0.9)
+        ax.text(-0.005, off, row["label"], ha="right", va="center", fontsize=9, color=col)
+    ax.set_yticks([])
+    ax.set_xlim(0, ts[-1])
+    ax.set_xlabel("time", color=MUT)
+    if not rows:
+        ax.text(0.25, 0, "Below Luminans threshold — no components", color=NOISEC, ha="center")
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=120, facecolor=BG)
+    plt.close(fig)
+
+
+def export_transparent(r, composite_path, radial_path, colour=WAVE):
+    """Game-ready PNGs of A and D: wave only, transparent background."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    if not r["components"]:
+        return False
+    ts, ys = composite(r, n=4000)
+    fig = plt.figure(figsize=(16, 4), dpi=128)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis("off")
+    ax.plot(ts, ys, color=colour, lw=1.4)
+    m = max(abs(v) for v in ys) * 1.08
+    ax.set_xlim(0, 1)
+    ax.set_ylim(-m, m)
+    fig.savefig(composite_path, transparent=True)
+    plt.close(fig)
+
+    _, vals = radial(r, n=4000)
+    xs, yy = _radial_xy(vals)
+    fig = plt.figure(figsize=(8, 8), dpi=128)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis("off")
+    ax.set_aspect("equal")
+    ax.plot(xs, yy, color=colour, lw=1.4)
+    ax.set_xlim(-1.4, 1.4)
+    ax.set_ylim(-1.4, 1.4)
+    fig.savefig(radial_path, transparent=True)
+    plt.close(fig)
+    return True
 
 
 def main(argv=None):
     import argparse
+    import os
     p = argparse.ArgumentParser(description="ID Sign-Wave generator")
     p.add_argument("subject", nargs="?", help="subject JSON file")
-    p.add_argument("--out", default="signwave.png", help="output image path")
+    p.add_argument("--out", default="overview.png", help="overview image (A, D, I/A/E chart, reading)")
+    p.add_argument("--stack", default="stack.png", help="component stack image (C, developer view)")
+    p.add_argument("--transparent", action="store_true",
+                   help="also save transparent PNGs of A and D next to --out")
+    p.add_argument("--colour", default=WAVE, help="wave colour for transparent PNGs, e.g. #ffffff")
     p.add_argument("--json", action="store_true", help="print full result as JSON")
     p.add_argument("--example", action="store_true", help="print an example subject")
     a = p.parse_args(argv)
@@ -485,10 +635,18 @@ def main(argv=None):
         return
     print(summary_text(r))
     try:
-        plot(r, a.out)
-        print(f"\nSaved {a.out}")
+        plot_overview(r, a.out)
+        plot_stack(r, a.stack)
+        print(f"\nSaved {a.out} and {a.stack}")
+        if a.transparent:
+            base = os.path.splitext(a.out)[0]
+            cp, rp = base + "_composite.png", base + "_radial.png"
+            if export_transparent(r, cp, rp, a.colour):
+                print(f"Saved {cp} and {rp} (transparent)")
+            else:
+                print("No transparent PNGs: below Luminans threshold.")
     except ImportError:
-        print("\n(matplotlib not installed: pip install matplotlib to save the image)")
+        print("\n(matplotlib not installed: pip install matplotlib to save images)")
 
 
 if __name__ == "__main__":

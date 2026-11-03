@@ -14,7 +14,6 @@
     --line: #232c38;
     --text: #e3e9f0;
     --muted: #8593a3;
-    --low: #4aa3ff;
     --high: #b48cff;
     --wave: #7ee8fa;
     --ok: #3fb950;
@@ -23,23 +22,20 @@
     --bad: #f85149;
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font: 14px/1.45 "IBM Plex Sans", system-ui, sans-serif;
-  }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "IBM Plex Sans", system-ui, sans-serif; }
   header { padding: 18px 16px 10px; border-bottom: 1px solid var(--line); }
   header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: .04em; }
   header p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
-  main { display: grid; grid-template-columns: 340px 1fr; gap: 0; min-height: calc(100vh - 64px); }
+  main { display: grid; grid-template-columns: 350px 1fr; min-height: calc(100vh - 64px); }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
   aside { border-right: 1px solid var(--line); padding: 14px 16px; overflow-y: auto; max-height: calc(100vh - 64px); }
   @media (max-width: 860px) { aside { max-height: none; border-right: 0; border-bottom: 1px solid var(--line); } }
   section.out { padding: 14px 16px; display: grid; gap: 14px; align-content: start; min-width: 0; }
-  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 14px 0 8px; font-weight: 500; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 16px 0 8px; font-weight: 500; }
   h2:first-child { margin-top: 0; }
-  .field { display: grid; grid-template-columns: 1fr 128px; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .field { display: grid; grid-template-columns: 1fr 140px; gap: 8px; align-items: center; margin-bottom: 6px; }
   .field label { color: var(--muted); font-size: 13px; }
-  input[type=number], select {
+  input[type=number], input[type=text], select {
     width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line);
     border-radius: 4px; padding: 4px 6px; font: 13px "IBM Plex Mono", monospace;
   }
@@ -52,13 +48,14 @@
   .des span:last-child { font-family: "IBM Plex Mono", monospace; text-align: right; color: var(--text); }
   input[type=range] { width: 100%; accent-color: var(--wave); }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
-  .card h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .card h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline; }
   .card h3 small { color: var(--muted); font-weight: 400; }
   canvas { width: 100%; display: block; }
-  #spec { height: 260px; }
+  #wa { height: 220px; }
+  #wd { aspect-ratio: 1 / 1; max-width: 440px; margin: 0 auto; }
+  #chart { aspect-ratio: 1 / 1; max-width: 440px; margin: 0 auto; }
   .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
   @media (max-width: 1100px) { .row { grid-template-columns: 1fr; } }
-  #chart { aspect-ratio: 1 / 1; max-width: 460px; margin: 0 auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   td { padding: 4px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
   td:first-child { color: var(--muted); width: 46%; }
@@ -68,13 +65,19 @@
   .b-bad { background: rgba(248,81,73,.15); color: var(--bad); }
   .b-mute { background: rgba(133,147,163,.15); color: var(--muted); }
   ul.notes { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
-  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-  button {
+  .btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+  button, .filebtn {
     background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 4px;
     padding: 5px 10px; font: 12px "IBM Plex Sans", sans-serif; cursor: pointer;
   }
-  button:hover { border-color: var(--wave); }
+  button:hover, .filebtn:hover { border-color: var(--wave); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .filebtn input { display: none; }
+  input[type=color] { width: 32px; height: 26px; padding: 0; border: 1px solid var(--line); background: none; border-radius: 4px; }
   .check { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .msg { color: var(--muted); font-size: 12px; min-height: 1.2em; margin-top: 6px; }
+  details.dev > summary { cursor: pointer; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; padding: 4px 0; }
+  details.dev[open] > summary { margin-bottom: 10px; }
   #loading { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; color: var(--muted); z-index: 10; text-align: center; padding: 16px; }
 </style>
 </head>
@@ -86,7 +89,22 @@
 </header>
 <main>
   <aside>
+    <h2>Subjects</h2>
+    <div class="field"><label for="roster">Saved subjects</label><select id="roster"></select></div>
+    <div class="btns">
+      <button id="saveSub">Save to list</button>
+      <button id="newSub">New</button>
+      <button id="delSub">Delete</button>
+    </div>
+    <div class="btns">
+      <label class="filebtn">Import JSON<input type="file" id="importFile" accept=".json,application/json"></label>
+      <button id="exportOne">Export current</button>
+      <button id="exportAll">Export all</button>
+    </div>
+    <div class="msg" id="msg"></div>
+
     <h2>Subject</h2>
+    <div class="field"><label for="name">Name</label><input id="name" type="text"></div>
     <div class="field"><label for="id">ID number (seed)</label><input id="id" type="number" step="1"></div>
     <div class="field"><label for="origin">Origin</label>
       <select id="origin"><option>Proto-Human</option><option>Neo-Human</option></select></div>
@@ -95,38 +113,57 @@
     <div class="field"><label for="max">Max capacity (units)</label><input id="max" type="number" min="1" step="1"></div>
     <div class="field"><label for="control">Control (1–100)</label><input id="control" type="number" min="1" max="100" step="1"></div>
     <label class="check"><input type="checkbox" id="drift" checked> Animate pre-awakening drift</label>
-    <div class="btns">
-      <button id="randId">New ID</button>
-      <button id="saveJson">Save subject JSON</button>
-      <button id="savePng">Save Sign-Wave PNG</button>
-    </div>
+    <div class="btns"><button id="randId">New ID</button></div>
     <h2>Desires</h2>
     <div id="cats"></div>
   </aside>
+
   <section class="out">
     <div class="card">
-      <h3>ID Sign-Wave <small id="specNote"></small></h3>
-      <canvas id="spec"></canvas>
+      <h3>A · Composite Sign-Wave <small id="aNote"></small></h3>
+      <canvas id="wa"></canvas>
     </div>
     <div class="row">
+      <div class="card">
+        <h3>D · Radial print <small>one period wrapped into a circle</small></h3>
+        <canvas id="wd"></canvas>
+      </div>
       <div class="card">
         <h3>I/A/E chart <small>vector sum of the 8 categories</small></h3>
         <canvas id="chart"></canvas>
       </div>
-      <div class="card">
-        <h3>Reading</h3>
-        <table id="readout"></table>
-        <ul class="notes" id="notes"></ul>
+    </div>
+    <div class="card">
+      <h3>Transparent PNG export <small>wave only, no background</small></h3>
+      <div class="btns">
+        <label class="check" style="margin:0">Colour <input type="color" id="expColour" value="#7ee8fa"></label>
+        <button id="pngA">Save A (composite)</button>
+        <button id="pngD">Save D (radial)</button>
       </div>
     </div>
+    <div class="card">
+      <h3>Reading</h3>
+      <table id="readout"></table>
+      <ul class="notes" id="notes"></ul>
+    </div>
+    <details class="dev" id="dev" open>
+      <summary>Developer view</summary>
+      <div class="card">
+        <h3>C · Component stack <small>each part of the signal on its own row</small></h3>
+        <canvas id="wc"></canvas>
+      </div>
+    </details>
   </section>
 </main>
 
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script>
-let L, META, result, driftT = 0, lastTick = 0;
+let L, META, result, driftT = 0, lastTick = 0, pending = false;
+let roster = [];
+const STORE = "luminograph.roster";
 const $ = id => document.getElementById(id);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const keyOf = d => d.replace(/\s/g, "_");
 
 async function boot() {
   const py = await loadPyodide();
@@ -135,124 +172,206 @@ async function boot() {
   L = py.pyimport("luminograph");
   META = JSON.parse(py.runPython(
     "import json, luminograph as L\n" +
-    "json.dumps({'desires': L.DESIRES, 'categories': L.CATEGORIES, 'example': L.EXAMPLE_SUBJECT, 'peak': L.PEAK_THRESHOLD})"));
-  buildForm(META.example);
+    "json.dumps({'desires': L.DESIRES, 'categories': L.CATEGORIES, 'example': L.EXAMPLE_SUBJECT})"));
+  buildForm();
+  try { roster = JSON.parse(localStorage.getItem(STORE) || "[]"); } catch (e) { roster = []; }
+  if (!roster.length) roster = [structuredClone(META.example)];
+  refreshRoster(0);
+  loadSubject(roster[0]);
   $("loading").remove();
-  update();
   requestAnimationFrame(tick);
 }
 
-function buildForm(ex) {
-  $("id").value = ex.id; $("origin").value = ex.origin; $("mass").value = ex.mass_kg;
-  $("units").value = ex.returnite_units; $("max").value = ex.max_capacity_units; $("control").value = ex.control;
+/* ---------- form ---------- */
+function buildForm() {
   const wrap = $("cats");
   META.categories.forEach(c => {
     const box = document.createElement("div");
     box.className = "cat"; box.id = "cat-" + c.name;
     box.innerHTML = `<div class="cat-head"><span>${c.name.toUpperCase()}</span><span class="v"></span></div>`;
     c.desires.forEach(d => {
-      const row = document.createElement("div");
+      const k = keyOf(d), row = document.createElement("div");
       row.className = "des";
-      const key = d.replace(/\s/g, "_");
-      row.innerHTML = `<label for="d-${key}">${d}</label><input type="range" min="1" max="100" id="d-${key}" value="${ex.desires[d]}"><span id="v-${key}">${ex.desires[d]}</span>`;
+      row.innerHTML = `<label for="d-${k}">${d}</label><input type="range" min="1" max="100" id="d-${k}"><span id="v-${k}"></span>`;
       box.appendChild(row);
     });
     wrap.appendChild(box);
   });
-  document.querySelectorAll("aside input, aside select").forEach(el => el.addEventListener("input", update));
-  $("randId").onclick = () => { $("id").value = Math.floor(Math.random() * 1e6); update(); };
-  $("saveJson").onclick = () => download("subject.json", "application/json", JSON.stringify(subject(), null, 2));
-  $("savePng").onclick = () => { const a = document.createElement("a"); a.href = $("spec").toDataURL("image/png"); a.download = "signwave.png"; a.click(); };
+  document.querySelectorAll("aside input:not([type=file]), aside select:not(#roster)").forEach(el => el.addEventListener("input", schedule));
+  $("dev").addEventListener("toggle", schedule);
+  $("randId").onclick = () => { $("id").value = Math.floor(Math.random() * 1e6); schedule(); };
+  $("roster").onchange = () => loadSubject(roster[+$("roster").value]);
+  $("saveSub").onclick = saveCurrent;
+  $("newSub").onclick = () => { const s = structuredClone(META.example); s.name = "New subject"; s.id = Math.floor(Math.random() * 1e6); roster.push(s); persist(); refreshRoster(roster.length - 1); loadSubject(s); say("New subject added."); };
+  $("delSub").onclick = deleteCurrent;
+  $("importFile").onchange = importFile;
+  $("exportOne").onclick = () => download(fileName(subject().name) + ".json", JSON.stringify(cleanSubject(subject()), null, 2));
+  $("exportAll").onclick = () => download("subjects.json", JSON.stringify(roster.map(cleanSubject), null, 2));
+  $("pngA").onclick = () => exportPng("A");
+  $("pngD").onclick = () => exportPng("D");
   window.addEventListener("resize", draw);
+}
+
+function loadSubject(s) {
+  const ex = META.example;
+  $("name").value = s.name ?? ""; $("id").value = s.id ?? 0; $("origin").value = s.origin ?? "Proto-Human";
+  $("mass").value = s.mass_kg ?? ex.mass_kg; $("units").value = s.returnite_units ?? 0;
+  $("max").value = s.max_capacity_units ?? ex.max_capacity_units; $("control").value = s.control ?? 50;
+  META.desires.forEach(d => { $("d-" + keyOf(d)).value = (s.desires && s.desires[d]) ?? 50; });
+  driftT = 0; schedule();
 }
 
 function subject() {
   const desires = {};
-  META.desires.forEach(d => {
-    const key = d.replace(/\s/g, "_");
-    desires[d] = +$("d-" + key).value;
-    $("v-" + key).textContent = desires[d];
-  });
+  META.desires.forEach(d => { const k = keyOf(d); desires[d] = +$("d-" + k).value; $("v-" + k).textContent = desires[d]; });
   return {
-    id: +$("id").value || 0, origin: $("origin").value, mass_kg: +$("mass").value || 1,
-    returnite_units: +$("units").value || 0, max_capacity_units: +$("max").value || 1,
-    control: +$("control").value || 1, drift_t: driftT, desires
+    name: $("name").value.trim() || "Unnamed", id: +$("id").value || 0, origin: $("origin").value,
+    mass_kg: +$("mass").value || 1, returnite_units: +$("units").value || 0,
+    max_capacity_units: +$("max").value || 1, control: +$("control").value || 1, drift_t: driftT, desires
   };
 }
+function cleanSubject(s) { const c = structuredClone(s); c.drift_t = 0; return c; }
 
+/* ---------- roster ---------- */
+function persist() { try { localStorage.setItem(STORE, JSON.stringify(roster)); } catch (e) {} }
+function refreshRoster(sel) {
+  $("roster").innerHTML = roster.map((s, i) => `<option value="${i}">${escapeHtml(s.name || "Unnamed")} · #${s.id}</option>`).join("");
+  $("roster").value = sel;
+}
+function saveCurrent() {
+  const s = cleanSubject(subject()), i = +$("roster").value;
+  if (roster[i] && roster[i].id === s.id) roster[i] = s; else { roster.push(s); }
+  const idx = roster.indexOf(s); persist(); refreshRoster(idx); say(`Saved “${s.name}”.`);
+}
+function deleteCurrent() {
+  if (roster.length <= 1) { say("Keep at least one subject."); return; }
+  const i = +$("roster").value, n = roster[i].name; roster.splice(i, 1); persist();
+  refreshRoster(0); loadSubject(roster[0]); say(`Deleted “${n}”.`);
+}
+async function importFile(e) {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    const list = (Array.isArray(data) ? data : [data]).filter(s => s && typeof s === "object" && s.desires);
+    if (!list.length) throw new Error("no subjects with a 'desires' field");
+    roster.push(...list); persist(); refreshRoster(roster.length - list.length);
+    loadSubject(roster[roster.length - list.length]);
+    say(`Imported ${list.length} subject${list.length > 1 ? "s" : ""}.`);
+  } catch (err) { say("Import failed: " + err.message); }
+  e.target.value = "";
+}
+
+/* ---------- compute ---------- */
+function schedule() { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; update(); }); } }
 function update() {
-  result = JSON.parse(L.analyse_json(JSON.stringify(subject())));
+  result = JSON.parse(L.analyse_json(JSON.stringify(subject()), $("dev").open));
   result.categories.forEach(c => {
     const box = $("cat-" + c.name);
     box.classList.toggle("peak", c.peak);
     box.querySelector(".v").textContent = c.value.toFixed(1) + (c.peak ? " · PEAK" : "");
   });
+  $("pngA").disabled = $("pngD").disabled = !result.past_threshold;
   draw(); readout();
 }
-
 function tick(ts) {
-  if ($("drift").checked && result && result.past_threshold && !result.awakened && ts - lastTick > 90) {
-    driftT += 0.12; lastTick = ts; update();
+  if ($("drift").checked && result && result.past_threshold && !result.awakened && ts - lastTick > 160) {
+    driftT += 0.18; lastTick = ts; update();
   }
   requestAnimationFrame(tick);
 }
 
+/* ---------- drawing ---------- */
 function setup(cv) {
   const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
-  cv.width = r.width * dpr; cv.height = r.height * dpr;
+  cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
   const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0);
   return [g, r.width, r.height];
 }
+function draw() { if (!result) return; drawA(); drawD(); drawChart(); if ($("dev").open) drawC(); }
 
-function draw() { if (result) { drawSpec(); drawChart(); } }
+function noSignal(g, W, H) {
+  g.fillStyle = css("--bad"); g.font = "13px 'IBM Plex Sans', sans-serif"; g.textAlign = "center";
+  g.fillText("Below Luminans threshold — no ID Sign-Wave", W / 2, H / 2); g.textAlign = "left";
+}
 
-function drawSpec() {
-  const [g, W, H] = setup($("spec"));
-  const sp = result.spectrum, pad = { l: 36, r: 10, t: 22, b: 26 };
-  const x = f => pad.l + (f / 100) * (W - pad.l - pad.r);
-  const y = v => H - pad.b - (v / 1.2) * (H - pad.t - pad.b);
+// Composite wave. transparent=true draws the wave only.
+function renderA(g, W, H, colour, transparent) {
+  const ys = result.waves.composite, n = ys.length;
+  const m = Math.max(1e-9, ...ys.map(Math.abs)) * 1.08;
+  const pad = transparent ? { l: 0, r: 0, t: 0, b: 0 } : { l: 8, r: 8, t: 8, b: 8 };
+  const x = i => pad.l + i / (n - 1) * (W - pad.l - pad.r);
+  const y = v => pad.t + (1 - (v / m + 1) / 2) * (H - pad.t - pad.b);
+  if (!transparent) {
+    g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H);
+    g.strokeStyle = css("--line"); g.lineWidth = 1;
+    g.beginPath(); g.moveTo(0, y(0)); g.lineTo(W, y(0)); g.stroke();
+    g.beginPath(); g.moveTo(x(0), y(0)); ys.forEach((v, i) => g.lineTo(x(i), y(v))); g.lineTo(x(n - 1), y(0)); g.closePath();
+    g.fillStyle = colour + "1a"; g.fill();
+  }
+  g.beginPath(); ys.forEach((v, i) => i ? g.lineTo(x(i), y(v)) : g.moveTo(x(i), y(v)));
+  g.strokeStyle = colour; g.lineWidth = transparent ? Math.max(2, W / 1200) : 1.2; g.lineJoin = "round"; g.stroke();
+}
+function drawA() {
+  const [g, W, H] = setup($("wa"));
+  if (!result.past_threshold) { g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H); noSignal(g, W, H); $("aNote").textContent = "no signature"; return; }
+  $("aNote").textContent = result.awakened ? "permanent · game UI" : "shifting (pre-awakening) · game UI";
+  renderA(g, W, H, css("--wave"), false);
+}
+
+// Radial print.
+function renderD(g, W, H, colour, transparent) {
+  const vs = result.waves.radial, n = vs.length, m = Math.max(1e-9, ...vs.map(Math.abs));
+  const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 / 1.4;
+  const pt = i => { const v = vs[i % n], th = (i / n) * Math.PI * 2 - Math.PI / 2, r = R * (1 + 0.35 * v / m); return [cx + r * Math.cos(th), cy + r * Math.sin(th)]; };
+  if (!transparent) {
+    g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H);
+    g.strokeStyle = css("--line"); g.setLineDash([2, 4]); g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+  }
+  g.beginPath(); for (let i = 0; i <= n; i++) { const [px, py] = pt(i); i ? g.lineTo(px, py) : g.moveTo(px, py); } g.closePath();
+  if (!transparent) { g.fillStyle = colour + "14"; g.fill(); }
+  g.strokeStyle = colour; g.lineWidth = transparent ? Math.max(2, W / 800) : 1.1; g.lineJoin = "round"; g.stroke();
+}
+function drawD() {
+  const [g, W, H] = setup($("wd"));
+  if (!result.past_threshold) { g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H); noSignal(g, W, H); return; }
+  renderD(g, W, H, css("--wave"), false);
+}
+
+// Component stack (developer view).
+function drawC() {
+  const cv = $("wc"), rows = result.waves.stack || [];
+  cv.style.height = Math.max(80, rows.length * 46 + 28) + "px";
+  const [g, W, H] = setup(cv);
   g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H);
-  [["low", "--low", "LOW BAND · field device"], ["high", "--high", "HIGH BAND · lab (ID)"]].forEach(([k, c, t]) => {
-    const [a, b] = sp.bands[k];
-    g.fillStyle = css(c) + "14"; g.fillRect(x(a), pad.t, x(b) - x(a), H - pad.t - pad.b);
-    g.fillStyle = css(c); g.font = "11px \'IBM Plex Sans\', sans-serif"; g.fillText(t, x(a) + 6, pad.t - 7);
-  });
-  g.strokeStyle = css("--line"); g.fillStyle = css("--muted"); g.font = "10px \'IBM Plex Mono\', monospace";
-  for (let f = 0; f <= 100; f += 10) {
-    g.beginPath(); g.moveTo(x(f), H - pad.b); g.lineTo(x(f), H - pad.b + 4); g.stroke();
-    g.fillText(f, x(f) - 6, H - 8);
-  }
-  g.fillText("rf", 6, H - 8);
-  if (!result.past_threshold) {
-    g.fillStyle = css("--bad"); g.font = "13px \'IBM Plex Sans\', sans-serif"; g.textAlign = "center";
-    g.fillText("Below Luminans threshold — no ID Sign-Wave", W / 2, H / 2); g.textAlign = "left";
-    $("specNote").textContent = "no signature"; return;
-  }
-  $("specNote").textContent = result.awakened ? "permanent" : "shifting (pre-awakening)";
-  g.beginPath(); g.moveTo(x(0), y(0));
-  sp.rf.forEach((f, i) => g.lineTo(x(f), y(sp.intensity[i])));
-  g.lineTo(x(100), y(0)); g.closePath();
-  g.fillStyle = css("--wave") + "26"; g.fill();
-  g.beginPath(); sp.rf.forEach((f, i) => i ? g.lineTo(x(f), y(sp.intensity[i])) : g.moveTo(x(f), y(sp.intensity[i])));
-  g.strokeStyle = css("--wave"); g.lineWidth = 1.2; g.stroke();
-  sp.lines.filter(l => l.kind === "category").forEach(l => {
-    g.fillStyle = l.peak ? css("--peak") : css("--muted"); g.font = "9px \'IBM Plex Mono\', monospace";
-    g.fillText(l.label.slice(0, 2), x(l.rf) - 5, y(l.amp) - 5);
+  if (!rows.length) { noSignal(g, W, H); return; }
+  const lab = 130, rowH = 46, top = 12;
+  const mainMax = Math.max(1e-9, ...rows.filter(r => r.kind === "dominant" || r.kind === "category").flatMap(r => r.y.map(Math.abs)));
+  const colour = r => r.peak ? css("--peak") : ({ dominant: css("--wave"), fine: css("--high"), noise: css("--bad") }[r.kind] || css("--ok"));
+  rows.forEach((r, k) => {
+    const mid = top + rowH * k + rowH / 2;
+    const m = (r.kind === "fine" || r.kind === "noise") ? Math.max(1e-9, ...r.y.map(Math.abs)) : mainMax;
+    const amp = (rowH / 2 - 4) * (r.kind === "fine" || r.kind === "noise" ? 0.9 : 1);
+    const n = r.y.length, x = i => lab + i / (n - 1) * (W - lab - 8);
+    g.strokeStyle = css("--line"); g.lineWidth = 1; g.beginPath(); g.moveTo(lab, mid); g.lineTo(W - 8, mid); g.stroke();
+    g.beginPath(); r.y.forEach((v, i) => { const py = mid - v / m * amp; i ? g.lineTo(x(i), py) : g.moveTo(x(i), py); });
+    g.strokeStyle = colour(r); g.lineWidth = 1.1; g.stroke();
+    g.fillStyle = colour(r); g.font = "11px 'IBM Plex Sans', sans-serif"; g.textAlign = "right";
+    g.fillText(r.label, lab - 10, mid + 4); g.textAlign = "left";
   });
 }
 
 function drawChart() {
-  const cv = $("chart"); const [g, W, H] = setup(cv);
-  const R = result.resultant, lim = Math.max(100, R.magnitude * 1.1), s = (Math.min(W, H) / 2 - 18) / lim;
+  const [g, W, H] = setup($("chart"));
+  const R = result.resultant, lim = Math.max(118, R.magnitude * 1.1), s = (Math.min(W, H) / 2 - 18) / lim;
   const cx = W / 2, cy = H / 2, X = v => cx + v * s, Y = v => cy - v * s;
   g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H);
   g.strokeStyle = css("--line"); g.lineWidth = 1;
   [25, 50, 75, 100].forEach(r => { g.beginPath(); g.arc(cx, cy, r * s, 0, Math.PI * 2); g.stroke(); });
   g.beginPath(); g.moveTo(X(-lim), cy); g.lineTo(X(lim), cy); g.moveTo(cx, Y(lim)); g.lineTo(cx, Y(-lim)); g.stroke();
-  g.font = "13px \'IBM Plex Sans\', sans-serif"; g.fillStyle = "#3a4656"; g.textAlign = "center";
+  g.font = "13px 'IBM Plex Sans', sans-serif"; g.fillStyle = "#3a4656"; g.textAlign = "center";
   const q = lim * 0.62;
   [[-q, q, "Materiatic"], [q, q, "Allurate"], [-q, -q, "Exultate"], [q, -q, "Karmatic"]].forEach(([a, b, t]) => g.fillText(t, X(a), Y(b)));
-  g.font = "10px \'IBM Plex Sans\', sans-serif"; g.fillStyle = css("--muted");
+  g.font = "10px 'IBM Plex Sans', sans-serif"; g.fillStyle = css("--muted");
   g.fillText("AFFERENT", cx, Y(lim) + 12); g.fillText("EFFERENT", cx, Y(-lim) - 4);
   g.textAlign = "left"; g.fillText("INSULAR", X(-lim) + 2, cy - 4);
   g.textAlign = "right"; g.fillText("ALTERAL", X(lim) - 2, cy - 4);
@@ -260,9 +379,8 @@ function drawChart() {
   result.categories.forEach(c => {
     const col = c.peak ? css("--peak") : css("--ok");
     g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath(); g.moveTo(cx, cy); g.lineTo(X(c.x), Y(c.y)); g.stroke();
-    g.fillStyle = col; g.font = "10px \'IBM Plex Sans\', sans-serif";
-    const k = (c.value + 9) / c.value;
-    g.fillText(c.name, X(c.x * k), Y(c.y * k) + 3);
+    g.fillStyle = col; g.font = "10px 'IBM Plex Sans', sans-serif";
+    const k = (c.value + 9) / c.value; g.fillText(c.name, X(c.x * k), Y(c.y * k) + 3);
   });
   g.strokeStyle = css("--res"); g.fillStyle = css("--res"); g.lineWidth = 2.6;
   g.beginPath(); g.moveTo(cx, cy); g.lineTo(X(R.x), Y(R.y)); g.stroke();
@@ -270,6 +388,21 @@ function drawChart() {
   g.textAlign = "left";
 }
 
+/* ---------- export ---------- */
+function exportPng(which) {
+  if (!result || !result.past_threshold) return;
+  const cv = document.createElement("canvas");
+  const [W, H] = which === "A" ? [2400, 600] : [1600, 1600];
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d"), colour = $("expColour").value;
+  if (which === "A") renderA(g, W, H, colour, true); else renderD(g, W, H, colour, true);
+  const s = subject(), a = document.createElement("a");
+  a.href = cv.toDataURL("image/png");
+  a.download = `${fileName(s.name)}_${s.id}_${which === "A" ? "composite" : "radial"}.png`;
+  a.click();
+}
+
+/* ---------- readout & helpers ---------- */
 function readout() {
   const r = result, s = r.subject, f = (v, d = 1) => Number(v).toFixed(d);
   const outcome = r.outcome
@@ -285,18 +418,21 @@ function readout() {
     ["Magnitude / angle", `${f(r.resultant.magnitude)} / ${f(r.resultant.angle, 0)}°`],
     ["Peaking categories", r.peaks.join(", ") || "none"],
     ["Chaos", f(r.chaos, 2)],
+    ["Instability", f(r.instability, 2)],
     ["Control required / held", `${f(r.required_control, 0)} / ${f(s.control, 0)}`],
     ["Evocation", r.in_evocation ? "yes" : "no"],
     ["Outcome", outcome],
   ];
   $("readout").innerHTML = rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join("");
-  $("notes").innerHTML = r.notes.map(n => `<li>${n}</li>`).join("");
+  $("notes").innerHTML = r.notes.map(n => `<li>${escapeHtml(n)}</li>`).join("");
 }
-
-function download(name, type, text) {
+function download(name, text) {
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = name; a.click();
 }
+function fileName(s) { return (s || "subject").replace(/[^\w\-]+/g, "_").slice(0, 40); }
+function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function say(t) { $("msg").textContent = t; }
 
 boot().catch(e => { $("loading").textContent = "Could not load: " + e; console.error(e); });
 </script>

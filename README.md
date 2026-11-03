@@ -13,12 +13,27 @@ Generates a subject's **Identifying Signature Wavelength (ID Sign-Wave)** and I/
 ## Run locally (Python)
 
 ```bash
-pip install matplotlib            # only needed for the image
-python luminograph.py                         # uses the built-in example
-python luminograph.py subject.json --out signwave.png
-python luminograph.py subject.json --json     # full result as JSON
+pip install matplotlib            # only needed for images
+python luminograph.py                          # built-in example -> overview.png + stack.png
+python luminograph.py subject.json             # your subject
+python luminograph.py subject.json --transparent              # + transparent A and D PNGs
+python luminograph.py subject.json --transparent --colour "#ffffff"
+python luminograph.py subject.json --json      # full result as JSON
 python luminograph.py --example > my_subject.json
 ```
+
+Outputs:
+- `overview.png`: A (composite), D (radial), I/A/E chart, reading
+- `stack.png`: C (component stack, developer view)
+- with `--transparent`: `overview_composite.png` and `overview_radial.png`, wave only on a transparent background
+
+## Web page features
+
+- **Subjects list:** save, add, delete; kept in your browser between visits.
+- **Import JSON:** one subject or a list of subjects. **Export current** / **Export all** download JSON files you can import later or run with the Python script.
+- **A · Composite Sign-Wave** (game UI), **D · Radial print**, **I/A/E chart**, **Reading**.
+- **Transparent PNG export** of A (2400×600) and D (1600×1600), in any colour.
+- **Developer view:** C · Component stack (collapse it to make the page faster).
 
 ## Publish on GitHub Pages
 
@@ -56,13 +71,16 @@ then open `http://localhost:8000`.
 - **Evocation** when past the Luminans threshold **and** either at The Reckoning, or at The Vitia with at least one peak.
 - **Outcome**: control ≥ required control → Lumenborn (Proto-Human) / Stellaborn (Neo-Human); otherwise Desir.
 
-## ID Sign-Wave layout (relative frequency, rf)
+## How the ID Sign-Wave is built
 
-- **Low band (0–30 rf)**, read by the field device:
-  - Dominant peak: position shows flow (afferent = lower rf, efferent = higher rf); shape shows scope (insular = single sharp peak, alteral = split doublet); height shows how far past the threshold.
-  - Category comb: 8 lines, one per category, height = category value.
-- **High band (30–100 rf)**, read in the lab: 32 fine lines whose positions come from the ID number. They drift before awakening and are fixed after.
-- **Line width** shows instability: broad lines = unstable.
+The wave is a sum of sine waves (frequency in rf = cycles per sample period):
+
+- **Dominant** (low band): flow sets the frequency (afferent = slower, efferent = faster); scope sets the shape (insular = one wave, alteral = two close waves that beat against each other); height shows how far past the threshold.
+- **Categories** (low band): one wave per category; height = category value; starting phase = the category's I/A/E direction angle.
+- **Fine lines** (high band): 32 waves whose frequencies and phases come from the ID number. They drift before awakening and are fixed after.
+- **Instability**: rough high-frequency texture, stronger the less stable the subject.
+
+The radial print (D) rounds each frequency to whole cycles so the loop closes.
 
 ## Placeholders to revisit
 

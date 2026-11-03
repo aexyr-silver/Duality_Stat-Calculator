@@ -205,6 +205,8 @@ Desire placement is now set by the 8 category directions (see Section 5, Desire 
 - A **control** stat (1–100) decides the outcome (formula to be discussed).
 - The wave is the **Identifying Signature Wavelength (ID Sign-Wave)**; frequency axis uses placeholder "relative frequency (rf)".
 
+**[Decided] Visualization:** A · Composite Sign-Wave (time on x, ± amplitude on y) for the game UI; D · Radial print also available; C · Component stack for developer use. No spectrogram or frequency spectrum in the UI. The web page imports/exports subjects as JSON and saves transparent PNGs of A and D.
+
 **[Built — v1]** `luminograph.py` + `index.html` (Pyodide). Placeholders: control formula `30 + 50 × chaos + 5 × extra peaks`; chaos = how much above-average categories pull in different directions; Evocation requires being past the Luminans threshold.
 
 ---
