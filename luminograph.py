@@ -521,23 +521,46 @@ def plot_overview(r, out_path):
     ax_d.set_ylim(-1.45, 1.45)
 
     _style(ax_c, "I/A/E chart")
-    lim = max(100, r["resultant"]["magnitude"] * 1.1)
+    cats = r["categories"]
+    R = r["resultant"]
+    lim = max(135, R["magnitude"] * 1.12)
     ax_c.set_xlim(-lim, lim)
     ax_c.set_ylim(-lim, lim)
     ax_c.set_aspect("equal")
-    ax_c.axhline(0, color=GRID)
-    ax_c.axvline(0, color=GRID)
-    q = lim * 0.6
-    for (x, y, name) in [(-q, q, "Materiatic"), (q, q, "Allurate"),
-                         (-q, -q, "Exultate"), (q, -q, "Karmatic")]:
-        ax_c.text(x, y, name, color="#3a4656", ha="center", va="center")
-    for c in r["categories"]:
+    ax_c.set_xticks([])
+    ax_c.set_yticks([])
+
+    def pt(rad, deg):
+        return rad * math.cos(math.radians(deg)), rad * math.sin(math.radians(deg))
+
+    def ring(rad):
+        p = [pt(rad, c["angle"]) for c in cats]
+        return [x for x, _ in p] + [p[0][0]], [y for _, y in p] + [p[0][1]]
+
+    for rad in (25, 50, 75, 100):
+        ax_c.plot(*ring(rad), color=GRID, lw=0.8)
+    for c in cats:
+        x, y = pt(100, c["angle"])
+        ax_c.plot([0, x], [0, y], color=GRID, lw=0.8)
+    ax_c.plot(*ring(80), color=PEAKC, lw=0.8, ls="--", alpha=0.45)
+    vals = [pt(c["value"], c["angle"]) for c in cats]
+    xs = [x for x, _ in vals] + [vals[0][0]]
+    ys = [y for _, y in vals] + [vals[0][1]]
+    ax_c.fill(xs, ys, color=OKC, alpha=0.15)
+    ax_c.plot(xs, ys, color=OKC, lw=1.4)
+    poles = {90: "AFFERENT", 270: "EFFERENT", 180: "INSULAR", 0: "ALTERAL",
+             135: "MATERIATIC · I-A", 45: "ALLURATE · A-A", 225: "EXULTATE · I-E", 315: "KARMATIC · A-E"}
+    for c, (x, y) in zip(cats, vals):
         col = PEAKC if c["peak"] else OKC
-        ax_c.plot([0, c["x"]], [0, c["y"]], color=col, lw=1.5)
-        ax_c.text(c["x"] * 1.1, c["y"] * 1.1, c["name"], color=col, fontsize=7, ha="center", va="center")
-    R = r["resultant"]
-    ax_c.annotate("", xy=(R["x"], R["y"]), xytext=(0, 0),
-                  arrowprops=dict(arrowstyle="->", color=RESC, lw=2.5))
+        ax_c.plot(x, y, "o", color=col, ms=6 if c["peak"] else 4)
+        lx, ly = pt(114, c["angle"])
+        ax_c.text(lx, ly, c["name"], color=PEAKC if c["peak"] else TXT, fontsize=7.5, ha="center", va="center")
+        if c["angle"] in poles:
+            ax_c.text(lx, ly - 9, poles[c["angle"]], color=MUT, fontsize=6, ha="center", va="center")
+    if R["magnitude"] > 0.5:
+        ax_c.annotate("", xy=(R["x"], R["y"]), xytext=(0, 0),
+                      arrowprops=dict(arrowstyle="-|>,head_length=0.8,head_width=0.45", color=RESC, lw=2.5))
+    ax_c.plot(0, 0, "o", color=RESC, ms=4)
 
     ax_t.axis("off")
     ax_t.text(0, 1, summary_text(r), color=TXT, va="top", family="monospace", fontsize=8)

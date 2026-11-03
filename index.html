@@ -129,7 +129,7 @@
         <canvas id="wd"></canvas>
       </div>
       <div class="card">
-        <h3>I/A/E chart <small>vector sum of the 8 categories</small></h3>
+        <h3>I/A/E chart <small>radar of the 8 categories · <span style="color:var(--res)">arrow = total vector</span></small></h3>
         <canvas id="chart"></canvas>
       </div>
     </div>
@@ -362,29 +362,54 @@ function drawC() {
 
 function drawChart() {
   const [g, W, H] = setup($("chart"));
-  const R = result.resultant, lim = Math.max(118, R.magnitude * 1.1), s = (Math.min(W, H) / 2 - 18) / lim;
-  const cx = W / 2, cy = H / 2, X = v => cx + v * s, Y = v => cy - v * s;
+  const R = result.resultant, cats = result.categories;
+  const lim = Math.max(135, R.magnitude * 1.12), s = (Math.min(W, H) / 2 - 10) / lim;
+  const cx = W / 2, cy = H / 2;
+  const P = (r, deg) => [cx + r * s * Math.cos(deg * Math.PI / 180), cy - r * s * Math.sin(deg * Math.PI / 180)];
+  const font = px => `${px}px 'IBM Plex Sans', sans-serif`;
+  const poly = (r, close = true) => { g.beginPath(); cats.forEach((c, i) => { const [x, y] = P(typeof r === "function" ? r(c) : r, c.angle); i ? g.lineTo(x, y) : g.moveTo(x, y); }); if (close) g.closePath(); };
   g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H);
+
+  // Grid: octagons at 25/50/75/100, spokes
   g.strokeStyle = css("--line"); g.lineWidth = 1;
-  [25, 50, 75, 100].forEach(r => { g.beginPath(); g.arc(cx, cy, r * s, 0, Math.PI * 2); g.stroke(); });
-  g.beginPath(); g.moveTo(X(-lim), cy); g.lineTo(X(lim), cy); g.moveTo(cx, Y(lim)); g.lineTo(cx, Y(-lim)); g.stroke();
-  g.font = "13px 'IBM Plex Sans', sans-serif"; g.fillStyle = "#3a4656"; g.textAlign = "center";
-  const q = lim * 0.62;
-  [[-q, q, "Materiatic"], [q, q, "Allurate"], [-q, -q, "Exultate"], [q, -q, "Karmatic"]].forEach(([a, b, t]) => g.fillText(t, X(a), Y(b)));
-  g.font = "10px 'IBM Plex Sans', sans-serif"; g.fillStyle = css("--muted");
-  g.fillText("AFFERENT", cx, Y(lim) + 12); g.fillText("EFFERENT", cx, Y(-lim) - 4);
-  g.textAlign = "left"; g.fillText("INSULAR", X(-lim) + 2, cy - 4);
-  g.textAlign = "right"; g.fillText("ALTERAL", X(lim) - 2, cy - 4);
-  g.textAlign = "center";
-  result.categories.forEach(c => {
-    const col = c.peak ? css("--peak") : css("--ok");
-    g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath(); g.moveTo(cx, cy); g.lineTo(X(c.x), Y(c.y)); g.stroke();
-    g.fillStyle = col; g.font = "10px 'IBM Plex Sans', sans-serif";
-    const k = (c.value + 9) / c.value; g.fillText(c.name, X(c.x * k), Y(c.y * k) + 3);
+  [25, 50, 75, 100].forEach(r => { poly(r); g.stroke(); });
+  cats.forEach(c => { const [x, y] = P(100, c.angle); g.beginPath(); g.moveTo(cx, cy); g.lineTo(x, y); g.stroke(); });
+  // Peak threshold ring
+  g.setLineDash([3, 4]); g.strokeStyle = css("--peak") + "66"; poly(80); g.stroke(); g.setLineDash([]);
+
+  // Radar shape
+  poly(c => c.value); g.fillStyle = css("--ok") + "26"; g.fill();
+  g.strokeStyle = css("--ok"); g.lineWidth = 1.6; g.stroke();
+  cats.forEach(c => {
+    const [x, y] = P(c.value, c.angle);
+    g.fillStyle = c.peak ? css("--peak") : css("--ok");
+    g.beginPath(); g.arc(x, y, c.peak ? 4.5 : 3, 0, Math.PI * 2); g.fill();
   });
-  g.strokeStyle = css("--res"); g.fillStyle = css("--res"); g.lineWidth = 2.6;
-  g.beginPath(); g.moveTo(cx, cy); g.lineTo(X(R.x), Y(R.y)); g.stroke();
-  g.beginPath(); g.arc(X(R.x), Y(R.y), 4.5, 0, Math.PI * 2); g.fill();
+
+  // Labels: category name at the rim; axis pole or quadrant name beneath it
+  const poles = { 90: "AFFERENT", 270: "EFFERENT", 180: "INSULAR", 0: "ALTERAL", 135: "MATERIATIC · I-A", 45: "ALLURATE · A-A", 225: "EXULTATE · I-E", 315: "KARMATIC · A-E" };
+  cats.forEach(c => {
+    const [x, y] = P(112, c.angle);
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillStyle = c.peak ? css("--peak") : css("--text"); g.font = font(11);
+    g.fillText(c.name, x, y);
+    if (poles[c.angle] !== undefined) { g.fillStyle = css("--muted"); g.font = font(9); g.fillText(poles[c.angle], x, y + 12); }
+  });
+  g.textBaseline = "alphabetic";
+
+  // Total vector with arrowhead
+  const [ex, ey] = P(R.magnitude, R.angle);
+  if (R.magnitude > 0.5) {
+    const ang = Math.atan2(ey - cy, ex - cx), head = 11;
+    g.strokeStyle = css("--res"); g.fillStyle = css("--res"); g.lineWidth = 2.6; g.lineCap = "round";
+    g.beginPath(); g.moveTo(cx, cy);
+    g.lineTo(ex - Math.cos(ang) * head * 0.8, ey - Math.sin(ang) * head * 0.8); g.stroke();
+    g.beginPath(); g.moveTo(ex, ey);
+    g.lineTo(ex - head * Math.cos(ang - 0.42), ey - head * Math.sin(ang - 0.42));
+    g.lineTo(ex - head * Math.cos(ang + 0.42), ey - head * Math.sin(ang + 0.42));
+    g.closePath(); g.fill(); g.lineCap = "butt";
+  }
+  g.beginPath(); g.arc(cx, cy, 3, 0, Math.PI * 2); g.fillStyle = css("--res"); g.fill();
   g.textAlign = "left";
 }
 
