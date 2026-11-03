@@ -46,6 +46,10 @@ CONTROL_BASE = 30
 CONTROL_CHAOS_WEIGHT = 50
 CONTROL_PER_EXTRA_PEAK = 5
 
+# Pre-awakening drift: each desire wanders around its entered value by up to
+# this many points. Peaks and the Evocation trigger use the entered values.
+DRIFT_AMPLITUDE = 10
+
 # If the resultant is shorter than this fraction of the total magnitude,
 # the subject reads as sitting at the centre of the chart.
 CENTRE_FRACTION = 0.05
@@ -200,6 +204,29 @@ def quadrant_for(x, y, near_centre):
     return QUADRANTS[(scope, flow)], f"{scope}-{flow}"
 
 
+def drift_desires(desires, seed, t):
+    """Pre-awakening drift: desires wander around their entered values."""
+    rng = random.Random(seed * 31 + 5)
+    out = {}
+    for d in DESIRES:
+        speed = 0.5 + 0.7 * rng.random()
+        phase = rng.random() * math.tau
+        out[d] = _clamp(desires[d] + DRIFT_AMPLITUDE * math.sin(t * speed + phase), 1, 100)
+    return out
+
+
+def _vector(cats):
+    rx = sum(c["x"] for c in cats)
+    ry = sum(c["y"] for c in cats)
+    total = sum(c["value"] for c in cats)
+    magnitude = math.hypot(rx, ry)
+    coherence = magnitude / total if total else 0.0
+    near_centre = coherence < CENTRE_FRACTION
+    quadrant, code = quadrant_for(rx, ry, near_centre)
+    angle = math.degrees(math.atan2(ry, rx)) % 360 if magnitude else 0.0
+    return rx, ry, total, magnitude, coherence, quadrant, code, angle
+
+
 def analyse(subject):
     """Main entry point. Returns a dict with every derived value and the wave components."""
     s = _clean_subject(subject)
@@ -214,12 +241,7 @@ def analyse(subject):
 
     cats = category_values(s["desires"])
     peaks = [c["name"] for c in cats if c["peak"]]
-    rx = sum(c["x"] for c in cats)
-    ry = sum(c["y"] for c in cats)
-    total = sum(c["value"] for c in cats)
-    magnitude = math.hypot(rx, ry)
-    coherence = magnitude / total if total else 0.0
-    near_centre = coherence < CENTRE_FRACTION
+    rx, ry, total, magnitude, coherence, quadrant, code, angle = _vector(cats)
 
     # Chaos: how much the *stronger-than-average* desires pull in different
     # directions. One dominant pull = calm; several opposing pulls = chaotic.
@@ -232,8 +254,6 @@ def analyse(subject):
         wy += w * math.sin(rad)
         wsum += w
     chaos = 1 - (math.hypot(wx, wy) / wsum) if wsum else 0.0
-    quadrant, code = quadrant_for(rx, ry, near_centre)
-    angle = math.degrees(math.atan2(ry, rx)) % 360 if magnitude else 0.0
 
     # Evocation: past the Luminans threshold, and either Reckoning,
     # or Vitia with at least one peaking category.
@@ -262,12 +282,24 @@ def analyse(subject):
         awakened = False
         instability = _clamp(0.3 + 0.5 * chaos, 0, 1)
 
+    # Pre-awakening drift: the desires wander, moving the I/A/E position and
+    # the low-band waves. Peaks and the Evocation trigger use entered values.
+    # The ID fine lines never drift.
+    drifted = None
+    if past_threshold and not awakened and s["drift_t"]:
+        drifted = drift_desires(s["desires"], s["id"], s["drift_t"])
+        base_peak = {c["name"]: c["peak"] for c in cats}
+        cats = category_values(drifted)
+        for c in cats:
+            c["peak"] = base_peak[c["name"]]
+        rx, ry, total, magnitude, coherence, quadrant, code, angle = _vector(cats)
+
     if not past_threshold:
         notes.append("Below Luminans threshold: no ID Sign-Wave is emitted.")
         if stage in ("The Vitia", "The Reckoning"):
             notes.append("In this stage but below threshold: this subject cannot undergo the Evocation.")
     elif not in_evocation:
-        notes.append("Pre-awakening: the ID Sign-Wave still shifts (drift_t).")
+        notes.append("Pre-awakening: desires drift, shifting the I/A/E position and the Sign-Wave. The ID fine lines stay fixed.")
     if outcome == "Desir":
         notes.append("Desir assumed to keep a permanent ID Sign-Wave (unconfirmed).")
     notes.append("Control formula is a placeholder.")
@@ -298,6 +330,7 @@ def analyse(subject):
         "outcome": outcome,
         "awakened": awakened,
         "instability": instability,
+        "drifted_desires": drifted,
         "components": comps,
         "notes": notes,
     }
@@ -312,7 +345,7 @@ def analyse(subject):
 #   category  - low band; one per category, amplitude = category value,
 #               phase = the category's I/A/E direction angle
 #   fine      - high band; positions and phases seeded by the ID number,
-#               drift before awakening, fixed after
+#               identical from first emission to the permanent wave
 #   noise     - instability; rough high-frequency texture, stronger when
 #               the subject is unstable
 # ---------------------------------------------------------------------------
@@ -346,20 +379,12 @@ def components(s, cats, rx, ry, total, ratio, past_threshold, awakened, instabil
                       "amp": amp * 0.5 * c["value"] / 100,
                       "phase": math.radians(c["angle"])})
 
-    # Fine lines (ID)
+    # Fine lines (ID): fixed by the ID number from first emission onward.
     rng = random.Random(s["id"])
     rng_phase = random.Random(s["id"] * 7919 + 1)
-    t = 0.0 if awakened else s["drift_t"]
-    for i in range(FINE_LINE_COUNT):
+    for _ in range(FINE_LINE_COUNT):
         pos = HIGH_BAND[0] + 2 + (HIGH_BAND[1] - HIGH_BAND[0] - 4) * rng.random()
-        base = 0.25 + 0.75 * rng.random()
-        ph1 = rng.random() * math.tau
-        ph2 = rng.random() * math.tau
-        desire = DESIRES[i % len(DESIRES)]
-        a = base * (0.6 + 0.4 * s["desires"][desire] / 100)
-        if t:
-            pos += 0.8 * math.sin(t * 0.9 + ph1)
-            a *= 1 + 0.15 * math.sin(t * 1.3 + ph2)
+        a = 0.25 + 0.75 * rng.random()
         comps.append({"kind": "fine", "label": "Fine lines (ID)",
                       "rf": pos, "amp": amp * 0.6 * a,
                       "phase": rng_phase.random() * math.tau})

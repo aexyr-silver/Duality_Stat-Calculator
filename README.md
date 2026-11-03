@@ -59,7 +59,7 @@ then open `http://localhost:8000`.
 | `returnite_units` | Returnite currently held |
 | `max_capacity_units` | Maximum capacity (100%) |
 | `control` | 1–100; decides the Evocation outcome (placeholder formula) |
-| `drift_t` | Time value for pre-awakening drift |
+| `drift_t` | Time value for pre-awakening desire drift |
 | `desires` | All 16 desires, 1–100 |
 
 ## Rules implemented
@@ -77,7 +77,8 @@ The wave is a sum of sine waves (frequency in rf = cycles per sample period):
 
 - **Dominant** (low band): flow sets the frequency (afferent = slower, efferent = faster); scope sets the shape (insular = one wave, alteral = two close waves that beat against each other); height shows how far past the threshold.
 - **Categories** (low band): one wave per category; height = category value; starting phase = the category's I/A/E direction angle.
-- **Fine lines** (high band): 32 waves whose frequencies and phases come from the ID number. They drift before awakening and are fixed after.
+- **Fine lines** (high band): 32 waves whose frequencies and phases come from the ID number. They are the same from the first emission to the permanent wave.
+- **Pre-awakening drift:** before awakening, each desire wanders up to ±10 around its entered value (`DRIFT_AMPLITUDE`). This moves the I/A/E position and the dominant and category waves. Peaks and the Evocation trigger always use the entered values. After awakening, nothing drifts.
 - **Instability**: rough high-frequency texture, stronger the less stable the subject.
 
 The radial print (D) rounds each frequency to whole cycles so the loop closes.

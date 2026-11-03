@@ -76,7 +76,9 @@ Status key: **[Decided]** = confirmed by Mysten · **[Proposed]** = suggested, n
 - **Base stats:** the 16 basic human desires, each rated 1–100.
 - **Core stat:** the 1 or 2 desires that peak compared to the rest (above 80). They cause awakening.
 - After awakening, the wavelength stops shifting and becomes a **permanent ID** for that person or monster.
-- A unique ID number produces each subject's fine lines. Before awakening, the fine lines stay similar even as desires and mass change. After awakening they are fixed.
+- A unique ID number produces each subject's fine lines. The ID fine lines **never change**: they are the same from first emission to the final permanent wavelength.
+- **Before awakening, the desires drift.** This shifts the I/A/E position and the desire-driven parts of the wave. After awakening, the desires stop drifting and the whole wavelength is permanent.
+- **[Draft]** In the code, each desire drifts up to ±10 around its entered value; peaks and the Evocation trigger use the entered values.
 
 ### Desire Categories (game stats) **[Decided]**
 
