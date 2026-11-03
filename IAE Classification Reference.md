@@ -1,6 +1,6 @@
 # I/A/E Classification — Reference Sheet
 
-*Project Duality · Magic System · Working reference (updated 30 Oct 2026)*
+*Project Duality · Magic System · Working reference (updated 3 Nov 2026)*
 
 Status key: **[Decided]** = confirmed by Mysten · **[Proposed]** = suggested, not yet confirmed · **[Draft]** = placeholder, open to change · **[Open]** = undecided
 
@@ -184,15 +184,7 @@ Desire placement is now set by the 8 category directions (see Section 5, Desire 
 - **Low-frequency band:** travels far and passes through tissue, but is coarse. Carries the dominant peak (I/A/E position) and amplitude. Read by the field device.
 - **High-frequency band:** short range, fine detail. Carries the fine lines (individual ID). Needs lab equipment at close range.
 
-**[Proposed]**
-
-| Feature | Indicates |
-|---|---|
-| Dominant peak position | Flow axis (afferent ↔ efferent) |
-| Shape / phase of peak | Scope axis (insular ↔ alteral) |
-| Amplitude | Units held relative to threshold |
-| Fine lines | Unique ID (seeded by ID number) |
-| Line sharpness | Control: sharp = stable; broad/drifting = instability |
+**[Decided]** The ID Sign-Wave is a sum of sine waves (see Section 9 for the build): category waves (low band, driven by the 8 categories), ID fine lines (high band, fixed by the ID), and an instability texture (from control, extra for Desir). Shown in the game UI as the scrolling **ID Sign-Wave** and the circular **ID Print**.
 
 ---
 
@@ -210,7 +202,24 @@ Desire placement is now set by the 8 category directions (see Section 5, Desire 
 
 **[Decided] Visualization:** A · Composite Sign-Wave (time on x, ± amplitude on y) for the game UI; D · Radial print also available; C · Component stack for developer use. No spectrogram or frequency spectrum in the UI. The web page imports/exports subjects as JSON and saves transparent PNGs of A and D.
 
-**[Built — v1]** `luminograph.py` + `index.html` (Pyodide). Placeholders: control formula `30 + 50 × chaos + 5 × extra peaks`; chaos = how much above-average categories pull in different directions; Evocation requires being past the Luminans threshold.
+**[Decided] Rules in the generator**
+- **Required control = 5 + 50 × chaos + 5 × each peaking category.** Control at or above it → Lumenborn / Stellaborn; below → Desir.
+- **Chaos (0–1):** how much the categories *above the subject's own average* pull in different directions. 0 = one clear pull; 1 = fully opposed. Below-average categories don't count.
+- **The Evocation requires being past the Luminans threshold.** Someone at The Reckoning but below their threshold never enters it.
+- **Desir keep a permanent ID Sign-Wave**, like any awakened subject.
+- **Uncategorized:** if the total vector is shorter than 5% of the eight categories' combined length, the subject has no quadrant.
+
+**[Decided] ID Sign-Wave build**
+- No separate dominant wave.
+- **Category waves:** one per category at fixed frequencies; height = category value; starting phase = the category's I/A/E direction angle.
+- **ID fine lines:** 8 waves set by the ID number.
+- **Instability texture:** 8 fast waves seeded by the ID; strength = instability × 0.1 (instability from control), + 0.2 for Desir.
+- **Drift:** ±3 per desire, each at its own speed.
+- **Animation:** the Sign-Wave scrolls 3% of its window per second.
+
+**[Open]**
+- Overall wave height (currently grows with how far past the threshold the subject is, levelling off at 10×) — to discuss.
+- Frequency unit — no unit shown; internals to discuss.
 
 ---
 

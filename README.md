@@ -70,24 +70,22 @@ then open `http://localhost:8000`.
 - **Categories** = average of their two desires. A category **peaks** above 80.
 - **I/A/E position** = vector sum of the 8 categories, each pointing in its fixed direction.
 - **Evocation** when past the Luminans threshold **and** either at The Reckoning, or at The Vitia with at least one peak.
-- **Outcome**: control ≥ required control → Lumenborn (Proto-Human) / Stellaborn (Neo-Human); otherwise Desir.
+- **Outcome**: control ≥ required control → Lumenborn (Proto-Human) / Stellaborn (Neo-Human); otherwise Desir. Required control = 5 + 50 × chaos + 5 × each peaking category.
+- **Desir** keep a permanent ID Sign-Wave, like any awakened subject.
+- **Uncategorized**: if the total vector is shorter than 5% of the eight categories' combined length, the subject has no quadrant.
 
 ## How the ID Sign-Wave is built
 
 The wave is a sum of sine waves (frequency in rf = cycles per sample period):
 
-- **Dominant** (low band): flow sets the frequency (afferent = slower, efferent = faster); scope sets the shape (insular = one wave, alteral = two close waves that beat against each other); height shows how far past the threshold.
 - **Categories** (low band): one wave per category; height = category value; starting phase = the category's I/A/E direction angle.
-- **Fine lines** (high band): 32 waves whose frequencies and phases come from the ID number. They are the same from the first emission to the permanent wave.
-- **Pre-awakening drift:** before awakening, each desire wanders up to ±3 around its entered value (`DRIFT_AMPLITUDE`). This moves the I/A/E position and the dominant and category waves. Peaks and the Evocation trigger always use the entered values. After awakening, nothing drifts.
-- **Instability**: high-frequency texture. Its strength comes from **control** (control 100 = smooth, control 1 = slightly rough; `NOISE_STRENGTH`). **Desir** get extra roughness on top (`DESIR_ROUGHNESS`). The pattern is seeded by the ID number.
+- **Fine lines** (high band): 8 waves whose frequencies and phases come from the ID number. They are the same from the first emission to the permanent wave.
+- **Pre-awakening drift:** before awakening, each desire wanders up to ±3 around its entered value (`DRIFT_AMPLITUDE`). This moves the I/A/E position and the category waves. Peaks and the Evocation trigger always use the entered values. After awakening, nothing drifts.
+- **Instability**: high-frequency texture from 8 fast waves. Its strength comes from **control** (strength = instability × 0.1, where control 100 = smooth and control 1 = full; `NOISE_STRENGTH`). **Desir** get +0.2 extra roughness (`DESIR_ROUGHNESS`). The pattern is seeded by the ID number.
 
 The ID Print blends each frequency between its two nearest whole numbers so the circle closes cleanly and changes glide smoothly.
 
-## Placeholders to revisit
+## Still open
 
-All are constants at the top of `luminograph.py`:
-
-- Control formula: `required = 30 + 50 × chaos + 5 × (extra peaks)`.
-- **Chaos** measures how much the above-average categories pull in different directions (0 = one clear pull, 1 = fully opposed).
-- Band ranges and line counts.
+- **Overall wave height**: grows with how far past the Luminans threshold the subject is, levelling off at 10×.
+- **Frequency unit**: the code uses "rf" internally; no unit is shown in the game.

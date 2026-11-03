@@ -40,11 +40,10 @@ RECKONING_MIN = 26
 # A category "peaks" when the average of its two desires is above this.
 PEAK_THRESHOLD = 80
 
-# Control placeholder formula (to be discussed):
-#   required control = BASE + CHAOS_WEIGHT * chaos + PER_EXTRA_PEAK * (peaks - 1)
-CONTROL_BASE = 30
+# Required control = 5 + 50 x chaos (0-1) + 5 x each peaking category
+CONTROL_BASE = 5
 CONTROL_CHAOS_WEIGHT = 50
-CONTROL_PER_EXTRA_PEAK = 5
+CONTROL_PER_PEAK = 5
 
 # Pre-awakening drift: each desire wanders around its entered value by up to
 # this many points (before being combined into the 8 categories). Peaks and the Evocation trigger use the entered values.
@@ -95,12 +94,10 @@ QUADRANTS = {
 # ID Sign-Wave layout (relative frequency units, "rf" = cycles per sample period)
 # ---------------------------------------------------------------------------
 
-LOW_BAND = (0.0, 30.0)    # field device: dominant peak + category comb
+LOW_BAND = (0.0, 30.0)    # field device: category waves
 HIGH_BAND = (30.0, 100.0)  # lab equipment: fine lines (ID)
-DOMINANT_CENTRE = 8.0      # rf of the dominant peak at neutral flow
-DOMINANT_SPAN = 6.0        # afferent shifts down, efferent shifts up
 COMB_START, COMB_STEP = 16.0, 1.6
-FINE_LINE_COUNT = 32
+FINE_LINE_COUNT = 8
 
 EXAMPLE_SUBJECT = {
     "id": 4172,
@@ -198,7 +195,7 @@ def category_values(desires):
 
 def quadrant_for(x, y, near_centre):
     if near_centre:
-        return "Centre", "-"
+        return "Uncategorized", "-"
     scope = "A" if x >= 0 else "I"
     flow = "A" if y >= 0 else "E"
     return QUADRANTS[(scope, flow)], f"{scope}-{flow}"
@@ -265,7 +262,7 @@ def analyse(subject):
     required = _clamp(
         CONTROL_BASE
         + CONTROL_CHAOS_WEIGHT * chaos
-        + CONTROL_PER_EXTRA_PEAK * max(0, len(peaks) - 1),
+        + CONTROL_PER_PEAK * len(peaks),
         0, 100,
     )
     margin = s["control"] - required
@@ -302,9 +299,6 @@ def analyse(subject):
             notes.append("In this stage but below threshold: this subject cannot undergo the Evocation.")
     elif not in_evocation:
         notes.append("Pre-awakening: desires drift, shifting the I/A/E position and the Sign-Wave. The ID fine lines stay fixed.")
-    if outcome == "Desir":
-        notes.append("Desir assumed to keep a permanent ID Sign-Wave (unconfirmed).")
-    notes.append("Control formula is a placeholder.")
 
 
     comps = components(s, cats, rx, ry, total, luminans_ratio,
@@ -343,7 +337,6 @@ def analyse(subject):
 #
 # The Sign-Wave is a sum of sine waves. Each component has a frequency (rf),
 # an amplitude and a starting phase:
-#   dominant  - low band; flow sets frequency, scope sets single/doublet
 #   category  - low band; one per category, amplitude = category value,
 #               phase = the category's I/A/E direction angle
 #   fine      - high band; positions and phases seeded by the ID number,
@@ -352,8 +345,8 @@ def analyse(subject):
 #               the subject is unstable
 # ---------------------------------------------------------------------------
 
-NOISE_COUNT = 24          # instability texture: seeded by ID, strength from control
-NOISE_STRENGTH = 0.12     # roughness at control 1 (scales down to 0 at control 100)
+NOISE_COUNT = 8           # instability texture: seeded by ID, strength from control
+NOISE_STRENGTH = 0.1      # roughness at control 1 (scales down to 0 at control 100)
 DESIR_ROUGHNESS = 0.2     # extra roughness added only for Desir
 NOISE_BAND = (100.0, 260.0)
 
@@ -364,17 +357,6 @@ def components(s, cats, rx, ry, total, ratio, past_threshold, awakened, instabil
         return comps
 
     amp = 0.4 + 0.6 * _clamp(math.log10(ratio), 0, 1)
-
-    # Dominant (flow -> frequency, scope -> shape)
-    nx = rx / total if total else 0.0   # + Alteral / - Insular
-    ny = ry / total if total else 0.0   # + Afferent / - Efferent
-    f0 = DOMINANT_CENTRE - DOMINANT_SPAN * _clamp(ny * 2, -1, 1)
-    if nx > 0:  # Alteral: doublet
-        split = 3.0 * _clamp(nx * 2, 0, 1)
-        comps.append({"kind": "dominant", "label": "Dominant", "rf": f0 - split / 2, "amp": amp * 0.6, "phase": 0.0})
-        comps.append({"kind": "dominant", "label": "Dominant", "rf": f0 + split / 2, "amp": amp * 0.6, "phase": math.pi / 2})
-    else:       # Insular: single
-        comps.append({"kind": "dominant", "label": "Dominant", "rf": f0, "amp": amp, "phase": 0.0})
 
     # Categories
     for i, c in enumerate(cats):
@@ -442,9 +424,6 @@ def stack(result, n=1500, t1=0.5):
     ts = [t1 * i / (n - 1) for i in range(n)]
     comps = result["components"]
     rows = []
-    dom = [c for c in comps if c["kind"] == "dominant"]
-    if dom:
-        rows.append({"label": "Dominant", "kind": "dominant", "peak": False, "y": _sum(dom, ts)})
     for c in comps:
         if c["kind"] == "category":
             rows.append({"label": c["label"], "kind": "category", "peak": c["peak"], "y": _sum([c], ts)})

@@ -299,7 +299,7 @@ function renderList() {
         <td>${escapeHtml(s.name || "Unnamed")}${i === cur ? ' <span style="color:var(--muted);font-size:11px">(open)</span>' : ""}</td>
         <td class="mono">${s.id}</td><td>${escapeHtml(s.origin || "Proto-Human")}</td>
         <td>${r.stage} <span style="color:var(--muted)" class="mono">${r.capacity_pct.toFixed(0)}%</span></td>
-        <td>${r.code === "-" ? "Centre" : `${r.quadrant} <span class="mono" style="color:var(--muted)">${r.code}</span>`}</td>
+        <td>${r.code === "-" ? "Uncategorized" : `${r.quadrant} <span class="mono" style="color:var(--muted)">${r.code}</span>`}</td>
         <td>${badge(r.status)}</td>
         <td class="acts">
           <button data-act="open" data-i="${i}">Open</button>
@@ -342,7 +342,7 @@ async function importFile(e) {
 /* ---------- compute ---------- */
 // Python (luminograph.py) does all the analysis and produces the wave
 // components. The page only sums those sine waves to draw each frame.
-const SCROLL_SPEED = 0.06;   // sample periods per second (Sign-Wave scroll)
+const SCROLL_SPEED = 0.03;   // sample periods per second (Sign-Wave scroll)
 const DRIFT_STEP_MS = 200;   // how often pre-awakening drift is recomputed in Python
 const BLEND_MS = 200;        // components glide between drift steps over this time
 let compsFrom = null, compsTo = null, blendStart = 0, offset = 0, lastFrame = 0;
@@ -475,7 +475,7 @@ function drawC() {
   g.fillStyle = css("--panel"); g.fillRect(0, 0, W, H);
   if (!rows.length) { noSignal(g, W, H); return; }
   const lab = 130, rowH = 46, top = 12;
-  const mainMax = Math.max(1e-9, ...rows.filter(r => r.kind === "dominant" || r.kind === "category").flatMap(r => r.y.map(Math.abs)));
+  const mainMax = Math.max(1e-9, ...rows.filter(r => r.kind === "category").flatMap(r => r.y.map(Math.abs)));
   const colour = r => r.peak ? css("--peak") : ({ dominant: css("--wave"), fine: css("--high"), noise: css("--bad") }[r.kind] || css("--ok"));
   rows.forEach((r, k) => {
     const mid = top + rowH * k + rowH / 2;
@@ -570,7 +570,7 @@ function readout() {
     ["Luminans ratio", `${f(r.luminans_ratio, 2)}×`],
     ["Capacity", `${f(r.capacity_pct)} %`],
     ["Stage", r.stage],
-    ["I/A/E position", r.quadrant_code === "-" ? "Centre" : `${r.quadrant} (${r.quadrant_code})`],
+    ["I/A/E position", r.quadrant_code === "-" ? "Uncategorized" : `${r.quadrant} (${r.quadrant_code})`],
     ["Magnitude / angle", `${f(r.resultant.magnitude)} / ${f(r.resultant.angle, 0)}°`],
     ["Peaking categories", r.peaks.join(", ") || "none"],
     ["Chaos", f(r.chaos, 2)],
