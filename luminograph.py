@@ -484,9 +484,9 @@ def summary_text(r):
         f"Returnite {s['returnite_units']:.1f} / {s['max_capacity_units']:.1f} units  "
         f"({r['capacity_pct']:.1f}%)",
         f"Stage: {r['stage']}",
-        f"I/A/E: {r['quadrant']} ({r['quadrant_code']})  "
+        f"Classification: {r['quadrant']} ({r['quadrant_code']})  "
         f"magnitude {r['resultant']['magnitude']:.1f}  angle {r['resultant']['angle']:.0f} deg",
-        f"Peaks: {', '.join(r['peaks']) or 'none'}",
+        f"Peak Desire(s): {', '.join(r['peaks']) or 'none'}",
         f"Chaos {r['chaos']:.2f}  required control {r['required_control']:.0f}  "
         f"control {s['control']:.0f}",
         f"Evocation: {'yes' if r['in_evocation'] else 'no'}  "

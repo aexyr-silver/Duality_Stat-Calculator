@@ -292,7 +292,7 @@ function newSubject() {
 function renderList() {
   const info = JSON.parse(L.summaries_json(JSON.stringify(roster)));
   const badge = st => `<span class="badge ${st === "Desir" ? "b-bad" : (st === "Lumenborn" || st === "Stellaborn") ? "b-ok" : "b-mute"}">${st}</span>`;
-  $("list").innerHTML = `<tr><th>Name</th><th>ID</th><th>Origin</th><th>Stage</th><th>I/A/E</th><th>Status</th><th></th></tr>` +
+  $("list").innerHTML = `<tr><th>Name</th><th>ID</th><th>Origin</th><th>Stage</th><th>Classification</th><th>Status</th><th></th></tr>` +
     roster.map((s, i) => {
       const r = info[i];
       return `<tr class="${i === cur ? "cur" : ""}">
@@ -570,9 +570,9 @@ function readout() {
     ["Luminans ratio", `${f(r.luminans_ratio, 2)}×`],
     ["Capacity", `${f(r.capacity_pct)} %`],
     ["Stage", r.stage],
-    ["I/A/E position", r.quadrant_code === "-" ? "Uncategorized" : `${r.quadrant} (${r.quadrant_code})`],
+    ["Classification", r.quadrant_code === "-" ? "Uncategorized" : `${r.quadrant} (${r.quadrant_code})`],
     ["Magnitude / angle", `${f(r.resultant.magnitude)} / ${f(r.resultant.angle, 0)}°`],
-    ["Peaking categories", r.peaks.join(", ") || "none"],
+    ["Peak Desire(s)", r.peaks.join(", ") || "none"],
     ["Chaos", f(r.chaos, 2)],
     ["Instability", f(r.instability, 2)],
     ["Control required / held", `${f(r.required_control, 0)} / ${f(s.control, 0)}`],
